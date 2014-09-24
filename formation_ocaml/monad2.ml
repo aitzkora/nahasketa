@@ -19,4 +19,4 @@ let ajout2 x y =
     bind (push x) (fun () ->
         bind (push y) (fun ()  ->
            bind add  (fun () -> 
-               bind pop  (fun (l:calc) -> ((l :calc),z)))));;   
+               bind pop  (fun l -> (l,z)))));;   
