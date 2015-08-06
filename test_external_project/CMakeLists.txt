@@ -32,7 +32,6 @@ ExternalProject_Add(
             Petsc
             URL http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.5.4.tar.gz 
             UPDATE_COMMAND "" 
-            SOURCE_DIR build_petsc
             CONFIGURE_COMMAND cd <SOURCE_DIR> && python2 ./configure --prefix=${PREFIX}
             --download-fblaslapack=yes
             --with-mpi-dir=${PREFIX}
@@ -56,10 +55,12 @@ set(BUILDDIR "build/${systype}-${cputype}")
 ExternalProject_Add(
             Parmetis
             URL http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
-            UPDATE_COMMAND "" 
             SOURCE_DIR build_parmetis 
+            UPDATE_COMMAND "" 
+            PATCH_COMMAND cd metis/include/ && patch < ${CMAKE_SOURCE_DIR}/metis_patch.txt
             CONFIGURE_COMMAND ${CMAKE_MAKE_PROGRAM} -C <SOURCE_DIR> config prefix=${PREFIX}
-            BUILD_COMMAND cd <SOURCE_DIR>/${BUILDDIR} && ${CMAKE_MAKE_PROGRAM} all
+            BUILD_COMMAND cd <SOURCE_DIR>/${BUILDDIR} && ${CMAKE_MAKE_PROGRAM}
+            -j${THREADS_COMPIL} all
             INSTALL_COMMAND cd <SOURCE_DIR>/${BUILDDIR} && ${CMAKE_MAKE_PROGRAM} install 
             ) 
 ExternalProject_Add_StepDependencies(Parmetis install openmpi)
