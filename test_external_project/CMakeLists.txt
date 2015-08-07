@@ -81,7 +81,7 @@ ExternalProject_Add(
             URL http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.15-patch1.tar  
             UPDATE_COMMAND "" 
             SOURCE_DIR build_hdf5
-            CONFIGURE_COMMAND CC=/${PREFIX}/bin/mpicc  <SOURCE_DIR>/configure --prefix=${PREFIX}
+            CONFIGURE_COMMAND CC=${PREFIX}/bin/mpicc  <SOURCE_DIR>/configure --prefix=${PREFIX}
             --enable-parallel 
             BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} -C <BINARY_DIR> -j${THREADS_COMPIL}
             INSTALL_COMMAND cd <BINARY_DIR> && ${CMAKE_MAKE_PROGRAM} install 
@@ -92,7 +92,7 @@ ExternalProject_Add_StepDependencies(HDF5 install openmpi)
 # =====================================================================================
 ExternalProject_Add(
     SCOTCH 
-    URL https://gforge.inria.fr/frs/download.php/latestfile/298/scotch_6.0.3.tar.gz
+    URL http://gforge.inria.fr/frs/download.php/latestfile/298/scotch_6.0.3.tar.gz
     UPDATE_COMMAND "" 
     SOURCE_DIR build_scotch
     PATCH_COMMAND  patch -p1 < ${CMAKE_SOURCE_DIR}/scotch_patch.txt
