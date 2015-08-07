@@ -95,10 +95,10 @@ ExternalProject_Add(
     URL https://gforge.inria.fr/frs/download.php/latestfile/298/scotch_6.0.3.tar.gz
     UPDATE_COMMAND "" 
     SOURCE_DIR build_scotch
-    PATCH_COMMAND  cd src &&  patch -p1 < ${CMAKE_SOURCE_DIR}/scotch_patch.txt
+    PATCH_COMMAND  patch -p1 < ${CMAKE_SOURCE_DIR}/scotch_patch.txt
     CONFIGURE_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_COMMAND} -DPREFIX=${PREFIX} -P
     configure_scotch.cmake 
-    BUILD_COMMAND cd <SOURCE_DIR> && ${CMAKE_MAKE_PROGRAM}  -j${THREADS_COMPIL}
+    BUILD_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_MAKE_PROGRAM}  -j${THREADS_COMPIL}
     INSTALL_COMMAND cd <SOURCE_DIR> && ${CMAKE_MAKE_PROGRAM} install 
     ) 
 ExternalProject_Add_StepDependencies(SCOTCH install openmpi)
