@@ -1,5 +1,201 @@
---- metis.h	2015-08-06 18:07:48.256971965 +0200
-+++ metis_patche.h	2015-08-06 18:08:02.960646880 +0200
+diff -rupN parmetis-4.0.3/configure_metis.cmake diff/configure_metis.cmake
+--- parmetis-4.0.3/configure_metis.cmake	1970-01-01 01:00:00.000000000 +0100
++++ diff/configure_metis.cmake	2015-08-07 18:05:01.768704576 +0200
+@@ -0,0 +1,5 @@
++if(NOT PREFIX)
++    message(FATAL_ERROR "PARMETIS Config : must be run with -DPREFIX=/path/to/install")
++endif()
++configure_file(${CMAKE_SOURCE_DIR}/Makefile.in
++    ${CMAKE_SOURCE_DIR}/Makefile)
+diff -rupN parmetis-4.0.3/Makefile diff/Makefile
+--- parmetis-4.0.3/Makefile	2013-03-30 17:24:50.000000000 +0100
++++ diff/Makefile	1970-01-01 01:00:00.000000000 +0100
+@@ -1,89 +0,0 @@
+-# Configuration options.
+-gdb        = not-set
+-assert     = not-set
+-assert2    = not-set
+-debug      = not-set
+-openmp     = not-set
+-prefix     = not-set
+-gklib_path = not-set
+-metis_path = not-set
+-shared     = not-set
+-cc         = mpicc
+-cxx        = mpicxx
+-
+-
+-# Basically proxies everything to the builddir cmake.
+-
+-PKGNAME = parmetis-4.0.3
+-
+-cputype = $(shell uname -m | sed "s/\\ /_/g")
+-systype = $(shell uname -s)
+-
+-BUILDDIR = build/$(systype)-$(cputype)
+-
+-# Process configuration options.
+-CONFIG_FLAGS = -DCMAKE_VERBOSE_MAKEFILE=1
+-ifeq ($(gklib_path), not-set)
+-    gklib_path = metis/GKlib
+-endif
+-ifeq ($(metis_path), not-set)
+-    metis_path = metis
+-endif
+-CONFIG_FLAGS += -DGKLIB_PATH=$(abspath $(gklib_path)) -DMETIS_PATH=$(abspath $(metis_path))
+-ifneq ($(gdb), not-set)
+-    CONFIG_FLAGS += -DGDB=$(gdb)
+-endif
+-ifneq ($(assert), not-set)
+-    CONFIG_FLAGS += -DASSERT=$(assert)
+-endif
+-ifneq ($(assert2), not-set)
+-    CONFIG_FLAGS += -DASSERT2=$(assert2)
+-endif
+-ifneq ($(debug), not-set)
+-    CONFIG_FLAGS += -DDEBUG=$(debug)
+-endif
+-ifneq ($(openmp), not-set)
+-    CONFIG_FLAGS += -DOPENMP=$(openmp)
+-endif
+-ifneq ($(prefix), not-set)
+-    CONFIG_FLAGS += -DCMAKE_INSTALL_PREFIX=$(prefix)
+-endif
+-ifneq ($(shared), not-set)
+-    CONFIG_FLAGS += -DSHARED=1
+-endif
+-ifneq ($(cc), not-set)
+-    CONFIG_FLAGS += -DCMAKE_C_COMPILER=$(cc)
+-endif
+-ifneq ($(cxx), not-set)
+-    CONFIG_FLAGS += -DCMAKE_CXX_COMPILER=$(cxx)
+-endif
+-
+-define run-config
+-mkdir -p $(BUILDDIR)
+-cd $(BUILDDIR) && cmake $(CURDIR) $(CONFIG_FLAGS)
+-endef
+-
+-all clean install:
+-	@if [ ! -f $(BUILDDIR)/Makefile ]; then \
+-		more BUILD.txt; \
+-	else \
+-	  	make -C $(BUILDDIR) $@ $(MAKEFLAGS); \
+-	fi
+-
+-uninstall:
+-	xargs rm < $(BUILDDIR)/install_manifest.txt
+-
+-config: distclean
+-	$(run-config)
+-
+-distclean:
+-	rm -rf $(BUILDDIR)
+-
+-remake:
+-	find . -name CMakeLists.txt -exec touch {} ';'
+-
+-dist:
+-	util/mkdist.sh $(PKGNAME)
+-
+-
+-.PHONY: config distclean dist all clean install uninstall remake
+diff -rupN parmetis-4.0.3/Makefile.in diff/Makefile.in
+--- parmetis-4.0.3/Makefile.in	1970-01-01 01:00:00.000000000 +0100
++++ diff/Makefile.in	2015-08-07 18:04:26.648076304 +0200
+@@ -0,0 +1,89 @@
++# Configuration options.
++gdb        = not-set
++assert     = not-set
++assert2    = not-set
++debug      = not-set
++openmp     = not-set
++prefix     = not-set
++gklib_path = not-set
++metis_path = not-set
++shared     = not-set
++cc         = @PREFIX@/bin/mpicc
++cxx        = @PREFIX@/bin/mpicxx
++
++
++# Basically proxies everything to the builddir cmake.
++
++PKGNAME = parmetis-4.0.3
++
++cputype = $(shell uname -m | sed "s/\\ /_/g")
++systype = $(shell uname -s)
++
++BUILDDIR = build/$(systype)-$(cputype)
++
++# Process configuration options.
++CONFIG_FLAGS = -DCMAKE_VERBOSE_MAKEFILE=1
++ifeq ($(gklib_path), not-set)
++    gklib_path = metis/GKlib
++endif
++ifeq ($(metis_path), not-set)
++    metis_path = metis
++endif
++CONFIG_FLAGS += -DGKLIB_PATH=$(abspath $(gklib_path)) -DMETIS_PATH=$(abspath $(metis_path))
++ifneq ($(gdb), not-set)
++    CONFIG_FLAGS += -DGDB=$(gdb)
++endif
++ifneq ($(assert), not-set)
++    CONFIG_FLAGS += -DASSERT=$(assert)
++endif
++ifneq ($(assert2), not-set)
++    CONFIG_FLAGS += -DASSERT2=$(assert2)
++endif
++ifneq ($(debug), not-set)
++    CONFIG_FLAGS += -DDEBUG=$(debug)
++endif
++ifneq ($(openmp), not-set)
++    CONFIG_FLAGS += -DOPENMP=$(openmp)
++endif
++ifneq ($(prefix), not-set)
++    CONFIG_FLAGS += -DCMAKE_INSTALL_PREFIX=$(prefix)
++endif
++ifneq ($(shared), not-set)
++    CONFIG_FLAGS += -DSHARED=1
++endif
++ifneq ($(cc), not-set)
++    CONFIG_FLAGS += -DCMAKE_C_COMPILER=$(cc)
++endif
++ifneq ($(cxx), not-set)
++    CONFIG_FLAGS += -DCMAKE_CXX_COMPILER=$(cxx)
++endif
++
++define run-config
++mkdir -p $(BUILDDIR)
++cd $(BUILDDIR) && cmake $(CURDIR) $(CONFIG_FLAGS)
++endef
++
++all clean install:
++	@if [ ! -f $(BUILDDIR)/Makefile ]; then \
++		more BUILD.txt; \
++	else \
++	  	make -C $(BUILDDIR) $@ $(MAKEFLAGS); \
++	fi
++
++uninstall:
++	xargs rm < $(BUILDDIR)/install_manifest.txt
++
++config: distclean
++	$(run-config)
++
++distclean:
++	rm -rf $(BUILDDIR)
++
++remake:
++	find . -name CMakeLists.txt -exec touch {} ';'
++
++dist:
++	util/mkdist.sh $(PKGNAME)
++
++
++.PHONY: config distclean dist all clean install uninstall remake
+diff -rupN parmetis-4.0.3/metis/include/metis.h diff/metis/include/metis.h
+--- parmetis-4.0.3/metis/include/metis.h	2013-03-30 17:24:50.000000000 +0100
++++ diff/metis/include/metis.h	2015-08-07 17:51:44.381718516 +0200
 @@ -40,7 +40,7 @@
     32 : single precission floating point (float)
     64 : double precission floating point (double)

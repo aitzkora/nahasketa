@@ -56,7 +56,8 @@ ExternalProject_Add(
             SOURCE_DIR build_parmetis 
             UPDATE_COMMAND "" 
             PATCH_COMMAND cd metis/include/ && patch < ${CMAKE_SOURCE_DIR}/metis_patch.txt
-            CONFIGURE_COMMAND CC=${PREFIX}/bin/mpicc ${CMAKE_MAKE_PROGRAM} -C <SOURCE_DIR> config prefix=${PREFIX}
+            CONFIGURE_COMMAND ${CMAKE_COMMAND} -DPREFIX=${PREFIX} -P
+            configure_metis.cmake && ${CMAKE_MAKE_PROGRAM} -C <SOURCE_DIR> config prefix=${PREFIX}
             BUILD_COMMAND cd <SOURCE_DIR>/${BUILDDIR} && ${CMAKE_MAKE_PROGRAM}
             -j${THREADS_COMPIL} all
             INSTALL_COMMAND cd <SOURCE_DIR>/${BUILDDIR} && ${CMAKE_MAKE_PROGRAM} install 
