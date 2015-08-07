@@ -56,7 +56,7 @@ ExternalProject_Add(
             SOURCE_DIR build_parmetis 
             UPDATE_COMMAND "" 
             PATCH_COMMAND cd metis/include/ && patch < ${CMAKE_SOURCE_DIR}/metis_patch.txt
-            CONFIGURE_COMMAND ${CMAKE_MAKE_PROGRAM} -C <SOURCE_DIR> config prefix=${PREFIX}
+            CONFIGURE_COMMAND CC=${PREFIX}/bin/mpicc ${CMAKE_MAKE_PROGRAM} -C <SOURCE_DIR> config prefix=${PREFIX}
             BUILD_COMMAND cd <SOURCE_DIR>/${BUILDDIR} && ${CMAKE_MAKE_PROGRAM}
             -j${THREADS_COMPIL} all
             INSTALL_COMMAND cd <SOURCE_DIR>/${BUILDDIR} && ${CMAKE_MAKE_PROGRAM} install 
@@ -79,7 +79,7 @@ ExternalProject_Add(
             URL http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.15-patch1.tar  
             UPDATE_COMMAND "" 
             SOURCE_DIR build_hdf5
-            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${PREFIX}
+            CONFIGURE_COMMAND CC=${PREFIX}/bin/mpicc  <SOURCE_DIR>/configure --prefix=${PREFIX}
             --enable-parallel 
             BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} -C <BINARY_DIR> -j${THREADS_COMPIL}
             INSTALL_COMMAND cd <BINARY_DIR> && ${CMAKE_MAKE_PROGRAM} install 
@@ -94,7 +94,7 @@ ExternalProject_Add(
     UPDATE_COMMAND "" 
     SOURCE_DIR build_scotch
     PATCH_COMMAND  patch -p1 < ${CMAKE_SOURCE_DIR}/scotch_patch.txt
-    CONFIGURE_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_COMMAND} -DPREFIX=${PREFIX} -P
+    CONFIGURE_COMMAND cd <SOURCE_DIR>/src && CC=${PREFIX}/bin/mpicc ${CMAKE_COMMAND} -DPREFIX=${PREFIX} -P
     configure_scotch.cmake 
     BUILD_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_MAKE_PROGRAM}  -j${THREADS_COMPIL}
     INSTALL_COMMAND cd <SOURCE_DIR> && ${CMAKE_MAKE_PROGRAM} install 
