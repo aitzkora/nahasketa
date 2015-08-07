@@ -96,7 +96,7 @@ ExternalProject_Add(
     UPDATE_COMMAND "" 
     SOURCE_DIR build_scotch
     PATCH_COMMAND  cd src &&  patch -p1 < ${CMAKE_SOURCE_DIR}/scotch_patch.txt
-    CONFIGURE_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_COMMAND} -D${PREFIX} -P
+    CONFIGURE_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_COMMAND} -DPREFIX=${PREFIX} -P
     configure_scotch.cmake 
     BUILD_COMMAND cd <SOURCE_DIR> && ${CMAKE_MAKE_PROGRAM}  -j${THREADS_COMPIL}
     INSTALL_COMMAND cd <SOURCE_DIR> && ${CMAKE_MAKE_PROGRAM} install 
