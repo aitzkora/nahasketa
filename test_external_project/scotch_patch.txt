@@ -1,0 +1,34 @@
+diff -rupN scotch_6.0.3/src/configure_scotch.cmake diff/src/configure_scotch.cmake
+--- scotch_6.0.3/src/configure_scotch.cmake	1970-01-01 01:00:00.000000000 +0100
++++ diff/src/configure_scotch.cmake	2015-08-07 11:28:21.000000000 +0200
+@@ -0,0 +1,5 @@
++if(NOT PREFIX)
++    message(FATAL_ERROR "must be run with -DPREFIX=/path/to/install")
++endif()
++configure_file(${CMAKE_SOURCE_DIR}/Makefile.inc.in
++    ${CMAKE_SOURCE_DIR}/Makefile.inc)
+diff -rupN scotch_6.0.3/src/Makefile.inc.in diff/src/Makefile.inc.in
+--- scotch_6.0.3/src/Makefile.inc.in	1970-01-01 01:00:00.000000000 +0100
++++ diff/src/Makefile.inc.in	2015-08-07 11:27:42.000000000 +0200
+@@ -0,0 +1,21 @@
++EXE		=
++LIB		= .a
++OBJ		= .o
++
++MAKE		= make
++AR		= ar
++ARFLAGS		= -ruv
++CAT		= cat
++CCS		= gcc
++CCP		= mpicc
++CCD		= gcc
++CFLAGS		= -O3 -I@PREFIX@/include -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -Drestrict=__restrict -DIDXSIZE64
++CLIBFLAGS	=
++LDFLAGS		= -lz -lm -lrt -pthread
++CP		= cp
++LEX		= flex -Pscotchyy -olex.yy.c
++LN		= ln
++MKDIR		= mkdir
++MV		= mv
++RANLIB		= ranlib
++YACC		= bison -pscotchyy -y -b y
