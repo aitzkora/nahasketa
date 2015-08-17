@@ -22,9 +22,46 @@ ExternalProject_Add(
             BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} -C <BINARY_DIR> -j${THREADS_COMPIL}
             INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} -j${THREADS_COMPIL} install
            ) 
-
 set(ENV{LD_LIBRARY_PATH} "${PREFIX}/lib:$ENV{PATH}")
-set(ENV{PATH} "${prefix}/bin:$ENV{PATH}")
+set(ENV{PATH} "${PREFIX}/bin:$ENV{PATH}")
+
+#=====================================================================================
+#Parmetis
+#=====================================================================================
+
+#Awful hack to retrieve the name of directory proposed by
+#parmetis makefile . It would be best to use directly the config 
+# furnished by by the cmake 
+#execute_process(COMMAND uname -m OUTPUT_VARIABLE cputype)
+#execute_process(COMMAND  uname -s OUTPUT_VARIABLE systype)
+#string(STRIP ${systype} systype)
+#string(STRIP ${cputype} cputype)
+#set(BUILDDIR "build/${systype}-${cputype}")
+ExternalProject_Add(
+            Parmetis
+            URL http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
+            SOURCE_DIR build_parmetis 
+            UPDATE_COMMAND "" 
+            CONFIGURE_COMMAND cd <SOURCE_DIR>/build  &&  ${CMAKE_COMMAND} -DCMAKE_INSTALL_PREFIX=${PREFIX}
+            -DCMAKE_C_COMPILER=${PREFIX}/bin/mpicc 
+            -DCMAKE_CXX_COMPILER=${PREFIX}/bin/mpicxx
+            -DGKLIB_PATH=<SOURCE_DIR>/metis/GKlib
+            -DMETIS_PATH=<SOURCE_DIR>/metis
+            <SOURCE_DIR> 
+            BUILD_COMMAND cd <SOURCE_DIR>/build && ${CMAKE_MAKE_PROGRAM}
+            -j${THREADS_COMPIL} all
+            INSTALL_COMMAND cd <SOURCE_DIR>/build && ${CMAKE_MAKE_PROGRAM} install 
+            ) 
+ExternalProject_Add_StepDependencies(Parmetis install openmpi)
+ExternalProject_Add_Step(Parmetis copy_metis_lib 
+    COMMAND ${CMAKE_COMMAND} -E copy
+    <SOURCE_DIR>/build/libmetis/libmetis.a ${PREFIX}/lib
+    DEPENDEES install
+    COMMENT "copy metis.a ${PREFIX}/lib")
+ExternalProject_Add_Step(Parmetis copy_metis_include 
+    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/metis/include/metis.h ${PREFIX}/include
+    DEPENDEES install
+    COMMENT "copy metis.h into ${PREFIX}/include")
 #=====================================================================================
 # Petsc
 #=====================================================================================
@@ -39,40 +76,6 @@ ExternalProject_Add(
             INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} -C<SOURCE_DIR> install
             )
 ExternalProject_Add_StepDependencies(Petsc install openmpi)
-#=====================================================================================
-#Parmetis
-#=====================================================================================
-
-#Awful hack to retrieve the name of directory proposed by
-#parmetis makefile . It would be best to use directly the config 
-# furnished by by the cmake 
-execute_process(COMMAND uname -m OUTPUT_VARIABLE cputype)
-execute_process(COMMAND  uname -s OUTPUT_VARIABLE systype)
-string(STRIP ${systype} systype)
-string(STRIP ${cputype} cputype)
-set(BUILDDIR "build/${systype}-${cputype}")
-
-ExternalProject_Add(
-            Parmetis
-            URL http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
-            SOURCE_DIR build_parmetis 
-            UPDATE_COMMAND "" 
-            PATCH_COMMAND cd metis/include/ && patch < ${CMAKE_SOURCE_DIR}/metis_patch.txt
-            CONFIGURE_COMMAND ${CMAKE_MAKE_PROGRAM} -C <SOURCE_DIR> config prefix=${PREFIX}
-            BUILD_COMMAND cd <SOURCE_DIR>/${BUILDDIR} && ${CMAKE_MAKE_PROGRAM}
-            -j${THREADS_COMPIL} all
-            INSTALL_COMMAND cd <SOURCE_DIR>/${BUILDDIR} && ${CMAKE_MAKE_PROGRAM} install 
-            ) 
-ExternalProject_Add_StepDependencies(Parmetis install openmpi)
-ExternalProject_Add_Step(Parmetis copy_metis_lib 
-    COMMAND ${CMAKE_COMMAND} -E copy
-    <SOURCE_DIR>/${BUILDDIR}/libmetis/libmetis.a ${PREFIX}/lib
-    DEPENDEES install
-    COMMENT "copy metis.a ${PREFIX}/lib")
-ExternalProject_Add_Step(Parmetis copy_metis_include 
-    COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/metis/include/metis.h ${PREFIX}/include
-    DEPENDEES install
-    COMMENT "copy metis.h into ${PREFIX}/include")
 # ===================================================================================n
 # HDF5
 # =====================================================================================
@@ -81,7 +84,7 @@ ExternalProject_Add(
             URL http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.15-patch1.tar  
             UPDATE_COMMAND "" 
             SOURCE_DIR build_hdf5
-            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${PREFIX}
+            CONFIGURE_COMMAND CC=${PREFIX}/bin/mpicc  <SOURCE_DIR>/configure --prefix=${PREFIX}
             --enable-parallel 
             BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} -C <BINARY_DIR> -j${THREADS_COMPIL}
             INSTALL_COMMAND cd <BINARY_DIR> && ${CMAKE_MAKE_PROGRAM} install 
@@ -92,13 +95,13 @@ ExternalProject_Add_StepDependencies(HDF5 install openmpi)
 # =====================================================================================
 ExternalProject_Add(
     SCOTCH 
-    URL https://gforge.inria.fr/frs/download.php/latestfile/298/scotch_6.0.3.tar.gz
+    URL http://gforge.inria.fr/frs/download.php/latestfile/298/scotch_6.0.3.tar.gz
     UPDATE_COMMAND "" 
     SOURCE_DIR build_scotch
-    PATCH_COMMAND  cd src &&  patch -p1 < ${CMAKE_SOURCE_DIR}/scotch_patch.txt
-    CONFIGURE_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_COMMAND} -D${PREFIX} -P
+    PATCH_COMMAND  patch -p1 < ${CMAKE_SOURCE_DIR}/scotch_patch.txt
+    CONFIGURE_COMMAND cd <SOURCE_DIR>/src && CC=${PREFIX}/bin/mpicc ${CMAKE_COMMAND} -DPREFIX=${PREFIX} -P
     configure_scotch.cmake 
-    BUILD_COMMAND cd <SOURCE_DIR> && ${CMAKE_MAKE_PROGRAM}  -j${THREADS_COMPIL}
+    BUILD_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_MAKE_PROGRAM}  -j${THREADS_COMPIL}
     INSTALL_COMMAND cd <SOURCE_DIR> && ${CMAKE_MAKE_PROGRAM} install 
     ) 
 ExternalProject_Add_StepDependencies(SCOTCH install openmpi)
