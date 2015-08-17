@@ -92,6 +92,6 @@ ExternalProject_Add(
     CONFIGURE_COMMAND cd <SOURCE_DIR>/src && CC=${PREFIX}/bin/mpicc ${CMAKE_COMMAND} -DPREFIX=${PREFIX} -P
     configure_scotch.cmake 
     BUILD_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_MAKE_PROGRAM}  -j${THREADS_COMPIL}
-    INSTALL_COMMAND cd <SOURCE_DIR> && ${CMAKE_MAKE_PROGRAM} install 
+    INSTALL_COMMAND cd <SOURCE_DIR>/src && ${CMAKE_MAKE_PROGRAM} install 
     ) 
 ExternalProject_Add_StepDependencies(SCOTCH install openmpi)
