@@ -24,19 +24,23 @@ ExternalProject_Add(
            ) 
 set(ENV{LD_LIBRARY_PATH} "${PREFIX}/lib:$ENV{PATH}")
 set(ENV{PATH} "${PREFIX}/bin:$ENV{PATH}")
-
+#=====================================================================================
+# Petsc
+#=====================================================================================
+ExternalProject_Add(
+            Petsc
+            URL http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.5.4.tar.gz 
+            UPDATE_COMMAND "" 
+            CONFIGURE_COMMAND cd <SOURCE_DIR> && python2 ./configure --prefix=${PREFIX}
+            --download-fblaslapack=yes
+            --with-mpi-dir=${PREFIX}
+            BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} -C <SOURCE_DIR> all 
+            INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} -C<SOURCE_DIR> install
+            )
+ExternalProject_Add_StepDependencies(Petsc install openmpi)
 #=====================================================================================
 #Parmetis
 #=====================================================================================
-
-#Awful hack to retrieve the name of directory proposed by
-#parmetis makefile . It would be best to use directly the config 
-# furnished by by the cmake 
-#execute_process(COMMAND uname -m OUTPUT_VARIABLE cputype)
-#execute_process(COMMAND  uname -s OUTPUT_VARIABLE systype)
-#string(STRIP ${systype} systype)
-#string(STRIP ${cputype} cputype)
-#set(BUILDDIR "build/${systype}-${cputype}")
 ExternalProject_Add(
             Parmetis
             URL http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
@@ -62,20 +66,6 @@ ExternalProject_Add_Step(Parmetis copy_metis_include
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/metis/include/metis.h ${PREFIX}/include
     DEPENDEES install
     COMMENT "copy metis.h into ${PREFIX}/include")
-#=====================================================================================
-# Petsc
-#=====================================================================================
-ExternalProject_Add(
-            Petsc
-            URL http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.5.4.tar.gz 
-            UPDATE_COMMAND "" 
-            CONFIGURE_COMMAND cd <SOURCE_DIR> && python2 ./configure --prefix=${PREFIX}
-            --download-fblaslapack=yes
-            --with-mpi-dir=${PREFIX}
-            BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} -C <SOURCE_DIR> all 
-            INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} -C<SOURCE_DIR> install
-            )
-ExternalProject_Add_StepDependencies(Petsc install openmpi)
 # ===================================================================================n
 # HDF5
 # =====================================================================================
