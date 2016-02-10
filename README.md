@@ -1,10 +1,16 @@
-txerritegi
+Nahasketa
 ==========
+bere izenak esaten duen bezala : nahaspila 
+comme son nom l'indique : ch'bazar 
 
-bere izenak esaten duen bezala : edozer gauza
-comme son nom l'indique : n'importe quoi
+cpp:
+---
+- des petits tests en c++
 
 python :
 --------
-- quelques scripts de tp pour du python scientifique
+- quelques scripts de TP pour du python scientifique
 
+tmux:
+----
+- les fichiers de config pour les MDBs sur tmux
