@@ -1,85 +1,78 @@
-# $Id: vim-keys.conf,v 1.2 2010-09-18 09:36:15 nicm Exp $
-#
-# vim-keys.conf, v1.2 2010/09/12
-#
-# By Daniel Thau.  Public domain.
-#
-# This configuration file binds many vi- and vim-like bindings to the
-# appropriate tmux key bindings.  Note that for many key bindings there is no
-# tmux analogue.  This is intended for tmux 1.3, which handles pane selection
-# differently from the previous versions
-
-# split windows like vim
-# vim's definition of a horizontal/vertical split is reversed from tmux's
-
-# general conf
-set-window-option -g automatic-rename off 
+# Configuration générale
 set -g utf8
 set-window-option -g utf8 on
 set -g default-terminal "screen-256color"
-set -g allow-rename on
-setw -g automatic-rename off
-# for remenbering screen
+
+# Ah ce bon vieux Screen !!!! ^_^
 set-option -g prefix C-a
-bind-key C-a send-prefix
 unbind-key C-b
-# status line
+
+# pour récuperer le C-A dans vim
+bind-key C-a send-prefix 
+
+# pour revenir à la fenêtre précédente
+bind-key C-t last-window
+set -g base-index 1 
+setw -g pane-base-index 1
+set -s escape-time 1
+
+# recharger la config
+bind r source-file ~/.tmux.conf \; display "config rechargée!"
+
+# pour le renommage des fenêtres
+# a utiliser conjointement avec le rajout dans bash
+set -g allow-rename on
+set-window-option -g automatic-rename off 
+
+######################
+# COULEURS 
+######################
+# ligne d'état
 set -g status-fg white
 set -g status-bg black
 setw -g window-status-fg cyan 
 setw -g window-status-bg default
 setw -g window-status-attr dim
-#active windows
+set -g status-right "#[fg=cyan]%d %b %R"
+set -g status-left " #[fg=green]#S #[fg=yellow]#I #[fg=cyan]#P"
+set -g status-utf8 on
+set -g status-interval 10
+
+# fenêtre active
 setw -g window-status-current-fg white 
 setw -g window-status-current-bg red 
 setw -g window-status-current-attr bright
-# active panes
-set  -g   pane-border-fg colour177 
-set  -g   pane-border-bg black
-set  -g   pane-active-border-fg white
-set  -g   pane-active-border-bg colour127 
+# sous-fenêtre active
+set -g pane-border-fg colour177 
+set -g pane-border-bg black
+set -g pane-active-border-fg white
+set -g pane-active-border-bg colour127 
 
 set -g message-fg colour148 
 set -g message-bg black
 set -g message-attr bright
 
-set -g status-right "#[fg=cyan]%d %b %R"
-
-set -g status-utf8 on
-set -g status-interval 10
 setw -g monitor-activity on
 set -g visual-activity on
 set -g status-justify centre
 set -g set-titles on
 set -g set-titles-string "#T"
 set -g window-status-format "#I:#T#F"
-set -g status-left " #[fg=green]#S #[fg=yellow]#I #[fg=cyan]#P"
  
-bind-key C-t last-window
-set -g base-index 1 
-setw -g pane-base-index 1
-set -s escape-time 1
-bind r source-file ~/.tmux.conf \; display "Berriz kargatu!"
-# move around panes with hjkl, as one would in vim after pressing ctrl-w
-bind h select-pane -L
-bind j select-pane -D
-bind k select-pane -U
-bind l select-pane -R
-
-# resize panes like vim
-# feel free to change the "1" to however many lines you want to resize by, only
-# one at a time can be slow
+# pour redimensionner
 bind < resize-pane -L 5
 bind > resize-pane -R 5
 bind - resize-pane -D 5 
 bind + resize-pane -U 5
 
-# sagua ezgauzatu
+#pour desactiver la pris en charge de la souris
 #setw -g mode-mouse off
 
-# bind : to command-prompt like vim
-# this is the default in tmux already
-bind : command-prompt
+# pour bouger comme dans vim entre les fenêtres
+bind h select-pane -L
+bind j select-pane -D
+bind k select-pane -U
+bind l select-pane -R
 
 # vi-style controls for copy mode
 setw -g mode-keys vi
@@ -89,6 +82,5 @@ bind -t vi-copy y copy-pipe "xclip"
 bind-key C-p run "xclip -o | tmux load-buffer -"
 unbind-key [
 unbind-key ]
-
 bind-key Escape copy-mode 
 bind-key ) paste-buffer
