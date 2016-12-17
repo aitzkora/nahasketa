@@ -1,0 +1,70 @@
+# Configuration générale
+set -g utf8
+set-window-option -g utf8 on
+set -g default-terminal "screen-256color"
+
+# Ah ce bon vieux Screen !!!! ^_^
+set-option -g prefix C-a
+unbind-key C-b
+
+# pour récuperer le C-A dans vim
+bind-key C-a send-prefix 
+
+# pour revenir à la fenêtre précédente
+bind-key C-t last-window
+set -g base-index 1 
+setw -g pane-base-index 1
+set -s escape-time 1
+
+# recharger la config
+bind r source-file ~/.tmux.conf \; display "config rechargée!"
+
+# pour le renommage des fenêtres
+# a utiliser conjointement avec le rajout dans bash
+set -g allow-rename on
+set-window-option -g automatic-rename off 
+
+######################
+# COULEURS 
+######################
+# ligne d'état
+set -g status-fg white
+set -g status-bg black
+setw -g window-status-fg cyan 
+setw -g window-status-bg default
+setw -g window-status-attr dim
+set -g status-right "#[fg=cyan]%d %b %R"
+set -g status-left " #[fg=green]#S #[fg=yellow]#I #[fg=cyan]#P"
+set -g status-utf8 on
+set -g status-interval 10
+
+# fenêtre active
+setw -g window-status-current-fg white 
+setw -g window-status-current-bg red 
+setw -g window-status-current-attr bright
+# sous-fenêtre active
+set -g pane-border-fg colour177 
+set -g pane-border-bg black
+set -g pane-active-border-fg white
+set -g pane-active-border-bg colour127 
+
+set -g message-fg colour148 
+set -g message-bg black
+set -g message-attr bright
+
+setw -g monitor-activity on
+set -g visual-activity on
+set -g status-justify centre
+set -g set-titles on
+set -g set-titles-string "#T"
+set -g window-status-format "#I:#T#F"
+ 
+# pour redimensionner
+bind < resize-pane -L 5
+bind > resize-pane -R 5
+bind - resize-pane -D 5 
+bind + resize-pane -U 5
+
+#pour desactiver la pris en charge de la souris
+#setw -g mode-mouse off
+
