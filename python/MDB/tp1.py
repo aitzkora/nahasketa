@@ -26,6 +26,3 @@ XX,YY = mgrid[0:1:N*1.j,0:1:N*1.j]
 ax.plot_surface(XX,YY, X, rstride = 2, cstride = 2, cmap= plt.cm.coolwarm)
 #ax.set_zlim(X.min(), X.max())
 plt.show()
-
-
-
