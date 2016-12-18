@@ -6,8 +6,7 @@ class EneBotoia(urwid.Text):
         w = self.__super.__init__(label)
         w = urwid.LineBox(w)
         w = urwid.Padding(w, 'center', len(label) + 2)
-        w = urwid.Filler(w, 'middle', height = 1)
-        self = w
+        w = urwid.Filler(w, 'middle', height=1)
 
 
 def exit_on_q(key):
@@ -18,6 +17,6 @@ def exit_on_q(key):
 button1 = EneBotoia(u'Berriz')
 button2 = EneBotoia(u'Erraza')
 empile = urwid.Columns([button1, button2])
-#top = urwid.Filler(empile, valign='top')
-loop = urwid.MainLoop(empile, unhandled_input=exit_on_q)
+top = urwid.Filler(empile, valign='top')
+loop = urwid.MainLoop(top, unhandled_input=exit_on_q)
 loop.run()
