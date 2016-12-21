@@ -1,12 +1,14 @@
 import urwid
 
 
-class EneBotoia(urwid.Text):
+class Botoia(urwid.Text):
+    """
+    Create a button with a frame around
+    """
     def __init__(self, label):
         self.__super.__init__(label)
         w = urwid.LineBox(self)
         w = urwid.Padding(w, 'center', len(label) + 2)
-        #w = urwid.Filler(w, 'middle', height=1)
         self.view = w
 
 
@@ -15,9 +17,11 @@ def exit_on_q(key):
         raise urwid.ExitMainLoop()
 
 
-button1 = EneBotoia(u'Berriz')
-button2 = EneBotoia(u'Erraza')
-empile = urwid.Columns([button1.view, button2.view])
-top = urwid.Filler(empile, valign='middle')
+berriz = Botoia(u'Berriz')
+zaila = Botoia(u'Zaila')
+ona = Botoia(u'Ona')
+erraza = Botoia(u'Erraza')
+empile = urwid.Columns([berriz.view, zaila.view, ona.view, erraza.view])
+top = urwid.Filler(empile, valign='bottom')
 loop = urwid.MainLoop(top, unhandled_input=exit_on_q)
 loop.run()
