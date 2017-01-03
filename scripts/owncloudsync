@@ -1,0 +1,6 @@
+#!/bin/bash
+user="marc.fuentes"
+pass=$($HOME/scripts/getpasswd.py owncloud)
+dir="$HOME/ownCloud"
+server="https://cloud.aquilenet.fr"
+/usr/bin/owncloudcmd --silent --user $user --password $pass $dir $server
