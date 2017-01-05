@@ -1,0 +1,14 @@
+#!/bin/bash
+fitxategia=$(mktemp --tmpdir --suffix=.cpp)
+echo "#include <iostream>
+#include <vector>
+#include <array>
+#include <functional>
+
+using namespace std;
+int main(int argc, char * argv[])
+{
+
+    return 0;
+}" >>$fitxategia
+tmux neww vim -c 'map <F9> <Esc>:!g++ -std=c++11 -o %_ex % && %_ex<Return>' -c ':8' $fitxategia
