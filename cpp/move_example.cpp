@@ -35,7 +35,6 @@ void initHashMap(HashMap<T> & hash)
     for(int j = 0; j < N; ++j)
         hash[i].insert(static_cast<T>(rand() % 100));
   }
-
 }
 
 double toSeconds(steady_clock::time_point & clock_begin, steady_clock::time_point & clock_end)
