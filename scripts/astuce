@@ -1,6 +1,0 @@
-#!/bin/bash
-if [ "$#" -eq 0 ]; then
-        vim ~/ownCloud/astuces.wiki
-else
-   grep "$*" ~/ownCloud/astuces.wiki
-fi
