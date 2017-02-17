@@ -1,20 +1,14 @@
 Nahasketa
 ==========
-- des petits programmes en vrac
+- small programs
 cpp
 ---
-des petits tests en c++
+small tests in c++
 
-python :
---------
+python
+------
 quelques scripts de TP pour du python scientifique
-
-scripts
--------
-des fichiers de config
 
 tmux
 ----
-les fichiers de config pour les MDBs sur tmux
-
-
+config files for tmux in the MDB (http://sed.bordeaux.inria.fr/la-bidouille)
