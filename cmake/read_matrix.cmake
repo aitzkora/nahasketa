@@ -41,6 +41,18 @@ macro(display_matrix matrix nbCols)
 endforeach()
 endmacro(display_matrix)
 
+# get a element (i,j) of a matrix
+macro(get_element mat nbCols i j out)
+    math(EXPR shift "${i} * ${nbCols} + ${j}")
+    list(GET ${mat} ${shift} ${out})
+endmacro(get_element)
+
 # a test
 read_matrix("mat.txt" mat nbCols)
-display_matrix(mat ${nbCols})
+#display_matrix(mat ${nbCols})
+# another test
+get_element(mat ${nbCols} 1 2 res)
+if(NOT  ${res} STREQUAL "hihihih")
+    message(FATAL_ERROR "get_element does not work ${res} != hihihih")
+endif()
+
