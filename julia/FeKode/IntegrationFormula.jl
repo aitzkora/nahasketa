@@ -17,14 +17,18 @@ function IntegrationFormula(dim::Int64,order::Int64)
       if (order == 2)
           weights = fill(1/6., 3);
           points = a = [[2/3. 1/6.]; [1/6. 1/6.]; [1/6. 2/3.]];
+          return IntegrationFormula(2, points, weights)
       end
    end
 end
 
 function integrate(f, formula::IntegrationFormula)
-    accu=f(points(1))
+    accu=f(tuple(formula.points[1,:]...)...)
     for i = 2 : size(formula.weights,1)
-        accu += f(formula.points[i,:]) * formula.weights[i];
+        accu += f(tuple(formula.points[i,:]...)...) * formula.weights[i];
     end
-    accu
+    return accu
 end
+
+using Base.Test
+@test_approx_eq_eps integrate((x,y)->x*y,z) 1./24 1e-6
