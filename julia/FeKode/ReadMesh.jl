@@ -24,12 +24,12 @@ function readMeshFromFile(fileName::String)
     i = 1
     nbCells = out[:GetNumberOfCells]()
     cellIdx =1
-    cells = fill(Int32[],nbCells)
+    cells = fill(Int32[], nbCells)
     while i < size(cellsRaw,1)
          currentCellSize = cellsRaw[i]
          cells[cellIdx] = cellsRaw[i+1:i+currentCellSize]
          i += currentCellSize+1
          cellIdx += 1
     end
-    return Mesh(points,cells)
+    return Mesh(points, cells)
 end
