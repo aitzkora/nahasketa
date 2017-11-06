@@ -1,4 +1,21 @@
 * Test formule de math
  \int \sin(x) dx = - \cos x
+* test de code
+#+BEGIN_SRC c++
+ void computeSum(vector<int> &x, int & sum)
+    {
+       sum = 0; 
+       for (auto & s : x )
+          {
+             sum += s;
+          }
+    }
+    //....
+    vector<int> z = { 1, 2, 3};
+    int s;
+    computeSum(z, s);
+    assert(s == 6);
 
-* 
+#+END_SRC
+
+
