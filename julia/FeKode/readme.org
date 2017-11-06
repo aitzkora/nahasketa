@@ -1,0 +1,3 @@
+* Test formule de math
+ $\int \sin(x) dx = - \cos x$
+
