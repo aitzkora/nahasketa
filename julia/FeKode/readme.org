@@ -1,3 +1,4 @@
 * Test formule de math
- $\int \sin(x) dx = - \cos x$
+ \(\int \sin(x) dx = - \cos x\)
 
+* 
