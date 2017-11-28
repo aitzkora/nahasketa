@@ -1,0 +1,12 @@
+cmake_minimum_required (VERSION 3.0.2)
+project (GtkTuto)
+find_package(GTK2)
+if (GTK2_FOUND)
+    message(STATUS "GTK INCLUDES = ${GTK2_INCLUDE_DIRS}")
+    message(STATUS "GTK LIBS = ${GTK2_LIBRARIES}")
+    include_directories(${GTK2_INCLUDE_DIRS})
+endif()
+add_definitions("-std=c++11")
+add_executable(oneWindow main.cpp)
+
+target_link_libraries(oneWindow ${GTK2_LIBRARIES})
