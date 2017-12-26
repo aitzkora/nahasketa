@@ -1,13 +1,9 @@
-type Mesh
-    points::Array{Float64,2}
-    cells::Array{Array{Int32}}
-end
-
+include Mesh
 using PyCall
 @pyimport vtk
 @pyimport vtk.util as vu
 @pyimport vtk.util.numpy_support as vuns
-function readMeshFromFile(fileName::String)
+function readMeshFromFileVtk(fileName::String)
     i::Int32
     reader=vtk.vtkUnstructuredGridReader()
     reader["SetFileName"](fileName)
@@ -24,7 +20,8 @@ function readMeshFromFile(fileName::String)
     i = 1
     nbCells = out[:GetNumberOfCells]()
     cellIdx =1
-    cells = fill(Int32[], nbCells)
+    # beware to cast toward Int if the system is 32bits
+    cells = fill(Int[], nbCells)
     while i < size(cellsRaw,1)
          currentCellSize = cellsRaw[i]
          cells[cellIdx] = cellsRaw[i+1:i+currentCellSize]
