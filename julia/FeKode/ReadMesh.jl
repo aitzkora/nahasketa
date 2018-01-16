@@ -1,4 +1,4 @@
-include Mesh
+include("Mesh.jl")
 using PyCall
 @pyimport vtk
 @pyimport vtk.util as vu
