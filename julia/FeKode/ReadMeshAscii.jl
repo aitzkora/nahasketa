@@ -4,7 +4,7 @@ function readMeshFromFileAsciiVtk(fileName::String)
     fp=open(fileName)
     lines=readlines(fp)
     close(fp)
-    lines = map(rstrip, lines)
+    filter!(x->x≠"",lines)
     if !(lines[3] == "ASCII")
         println("we read only ASCII files")
         return m
