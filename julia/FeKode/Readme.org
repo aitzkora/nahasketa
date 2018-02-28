@@ -24,7 +24,7 @@
     \in \mathbb{R}^2 \right\} + P_0 $$
     and use the magnitude of the cross product of the partial derivatives of 
     $\Phi_k(r,s)$ as the elementary surface [[http://en.wikipedia.org/wiki/Surface_integral][wikipedia]]
-    $$ d\Sigma = \left\| \frac{\partial \Phi}{\partial r} \wedge \frac{\partial 
+    $$ d\Sigma = J(r,s) drds= \left\| \frac{\partial \Phi}{\partial r} \wedge \frac{\partial 
     \Phi}{\partial s} \right\| drds= \left\|
     \left(\begin{array}{c} 
     p^1_x - p^0_x\\ 
@@ -37,5 +37,6 @@
     p^2_z - p^0_z
     \end{array}\right)
     \right\| drds$$
-*** using a quadrature formula 
+*** using a quadrature formula
     now to compute the integral, one could use a Gauß formula
+    $$ \int_T f(x) dx  = \sum_i f(\xi_i) w_i $$
