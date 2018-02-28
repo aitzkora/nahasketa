@@ -1,7 +1,7 @@
 # vtk DataFile Version 1.0
 two triangles
 ASCII
-DATASET STRUCTURED_GRID
+DATASET UNSTRUCTURED_GRID
 POINTS 4 float
 0. 0. 0.
 0. 1. 0.
