@@ -21,7 +21,7 @@ a = reshape([ gcd(i,j) + 0. for i=1:4 for j=1:3], 3,4)
 @test mapRefToLocal(a[:,1:3]) == [0 0; 1 0; 0 2]
 @test mapRefToLocal(a[:,1:4]) == [0 0 0; 1 0 1; 0 2 0]
 
-""" 
+"""
 jacobian(x)
 
 compute the jacobian of the current element
@@ -46,21 +46,49 @@ a = reshape([ gcd(i,j) + 0. for i=1:4 for j=1:3], 3,4)
 @test jacobian(a[:,1:4]) == 0
 
 
-include("Mesh.jl")
-function stiffnesMatrix(mesh::Mesh)
-    m = size(mesh.cells, 1)
-    n = size(mesh.points, 1)
-    A = zeros(n, n)
-    for el in 1:m
-        pts= mesh.points[mesh.cells[el],:]
-        B_k = jacobian(pts)
-    end
+include("BasisFunction.jl")
+function computeφAndDφOnGaußPoints(fun::BasisFunction, form::IntegrationFormula)
+m = size(fun.φ, 1)
+n = size(form.points, 1)
+M = Float64[fun.φ[i](form.points[k]) for i=1:m, k=1:n]
+N = Float64[fun.Dφ[i,j](form.points[k]) for i=1:m, j=1:m , k=1:n]
+return M,N
 end
 
-function massMatrix(m::Mesh)
-    nCells = size(Cells,1)
-    for t=1:nCells
-        indices=m.cells[t]
-        en
+
+"""
+cartesianProduct(x, y)
+
+  Cartesian product of two sets describing by vectors
+
+   Example
+  ≡≡≡≡≡≡≡≡≡
+
+julia> cartesianProduct([2,4],[1,2,3])
+([2, 2, 2, 4, 4, 4], [1, 2, 3, 1, 2, 3])
+
+"""
+function cartesianProduct(x,y)
+    return repeat(x,inner=size(y,1)),repeat(y,outer=size(x,1))
+end
+
+
+include("Mesh.jl")
+function stiffnesAndMassMatrix(mesh::Mesh, order::Int64, fun::BasisFunction)
+    m = size(mesh.cells, 1)
+    n = size(mesh.points, 1)
+    K = spzeros(n, n)
+    M = spzeros(n, n)
+    # dim cst
+    dim = size(mesh.points[1], 2)
+    form = IntegrationFormula(dim, order)
+    φ, Dφ = computeφAndDφOnGaußPoints(fun, form)
+    for el in 1:m
+        indices = mesh.cells[el]
+        pts   = mesh.points[indices, :]'
+        bK    = mapRefToLocal(pts)
+        jK    = jacobian(pts)
+        mElem = φ * Diagonal(jk.*form.weights)*φ'
+        M += sparse(cartesianProduct(indices, indices)...,mElem[:], n,n)
     end
 end
