@@ -61,8 +61,7 @@ cartesianProduct(x, y)
 
   Cartesian product of two sets describing by vectors
 
-   Example
-  ≡≡≡≡≡≡≡≡≡
+# Example
 
 julia> cartesianProduct([2,4],[1,2,3])
 ([2, 2, 2, 4, 4, 4], [1, 2, 3, 1, 2, 3])
