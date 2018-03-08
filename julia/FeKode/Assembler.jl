@@ -63,9 +63,6 @@ n_ref = repeat(reshape(n_ref,3,2,1), outer=(1,1,3))
 @test norm(m - m_ref) ≈ 0. atol = 1.e-12
 @test norm(vec(n - n_ref)) ≈ 0. atol = 1.e-12
 
-
-
-
 """
 cartesianProduct(x, y)
 
@@ -81,9 +78,8 @@ function cartesianProduct(x,y)
     return repeat(x,inner=size(y,1)),repeat(y,outer=size(x,1))
 end
 
-
 include("Mesh.jl")
-function stiffnesAndMassMatrix(mesh::Mesh, order::Int64, fun::BasisFunction)
+function stiffnesAndMassMatrix(mesh::Mesh, order::Int, fun::BasisFunction)
     m = size(mesh.cells, 1)
     n = size(mesh.points, 1)
     K = spzeros(n, n)
@@ -91,14 +87,18 @@ function stiffnesAndMassMatrix(mesh::Mesh, order::Int64, fun::BasisFunction)
     # dim cst
     dim = size(mesh.points[1], 2)
     form = IntegrationFormula(dim, order)
+    p = length(form.weights)
     φ, Dφ = computeφAndDφOnGaußPoints(fun, form)
     for el in 1:m
         indices = mesh.cells[el]
         pts   = mesh.points[indices, :]'
-        bK    = mapRefToLocal(pts)
+        BK    = mapRefToLocal(pts)
+        BK2   = inv(BK'Bk)
         jK    = jacobian(pts)
         mElem = φ * Diagonal(jk.*form.weights)*φ'
-        M += sparse(cartesianProduct(indices, indices)...,mElem[:], n,n)
+        kelem = sum([form.weights[l] * jacobian * Dφ[:,:,l] * BK2 * Dφ[:,:,l]' for l =1:p])
+        M += sparse(cartesianProduct(indices, indices)...,mElem[:], n, n)
+        K += sparse(cartesianProduct(indices, indices)...,kElem[:], n, n)
     end
     return K,M
 end
