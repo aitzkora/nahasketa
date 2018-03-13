@@ -1,4 +1,3 @@
-include("Mesh.jl")
 function readMeshFromFileAsciiVtk(fileName::String)
     m=Mesh(zeros(0,0),Array{Int64}[])
     fp=open(fileName)
