@@ -18,7 +18,8 @@ n_ref = repeat(reshape(n_ref,3,2,1), outer=(1,1,3))
 @test norm(vec(n - n_ref)) ≈ 0. atol = 1.e-12
 
 #
-mesh = FeKode.readMeshFromFileAsciiVtk("twoTriangles.vtk")
+dataDir = joinpath(rootDir, "data")
+mesh = FeKode.readMeshFromFileAsciiVtk(joinpath(dataDir, "twoTriangles.vtk"))
 @test FeKode.stiffnesAndMassMatrix(mesh, 2, base)
 
 end

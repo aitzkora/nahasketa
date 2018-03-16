@@ -1,12 +1,12 @@
 """
-create the B_k matrix which corresponds to the linear map  from the 
+create the Bₖ matrix which corresponds to the linear map  from the 
 reference element ``T = \{ (x,y,z) : x,y,z ≥ 0 x+y+z = 1 \}` to the
 current triangle
 
 # Arguments :
 * x : a 3 x m matrix containing all the points of the current element
-# Returns : 
-``B_k = [ p_m - p_1, \cdot, p_2 ... p_1]``
+# Returns :
+``Bₖ = [ p_m - p_1, \cdot, p_2 ... p_1]``
 """
 function mapRefToLocal(x::Array{Float64,2})
     @assert(size(x, 1) == 3)
@@ -17,21 +17,12 @@ end
 jacobian(x)
 
 compute the jacobian of the current element, i.e. the elementary surface
-* 1-D : ``\|B_k\| ``
-* 2-D : ``\|B_k^1 \wedge B_k^2 \|``
-* 3-D : ``|\det B_k|``
 """
 function jacobian(x::Array{Float64,2})
     m = mapRefToLocal(x)
     n = size(m, 2)
-    @assert (n in 1:3)
-    if (n == 1)
-        return norm(m)
-    elseif (n == 2)
-        return norm(cross(m[:,1], m[:, 2]))
-    elseif (n == 3)
-        return abs(det(m))
-    end
+    F=svdfact(m)
+    return abs(prod(F[:S]))
 end
 
 function computeφAndDφOnGaußPoints(fun::BasisFunction, form::IntegrationFormula)
