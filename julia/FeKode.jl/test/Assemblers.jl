@@ -20,6 +20,6 @@ n_ref = repeat(reshape(n_ref,3,2,1), outer=(1,1,3))
 #
 dataDir = joinpath(rootDir, "data")
 mesh = FeKode.readMeshFromFileAsciiVtk(joinpath(dataDir, "twoTriangles.vtk"))
-@test FeKode.stiffnesAndMassMatrix(mesh, 2, base)
+@test FeKode.stiffnesAndMassMatrix(mesh, 2, 2, base)
 
 end
