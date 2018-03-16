@@ -33,5 +33,5 @@ function readMeshFromFileAsciiVtk(fileName::String)
        ints = map(x->parse(Int, x), split(lines[i]))
        cells[i-cellOffset] = ints[2:end]
     end
-    return Mesh(pts, cells)
+    return Mesh(pts, cells + 1)
 end

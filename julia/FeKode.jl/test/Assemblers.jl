@@ -9,8 +9,8 @@ a = reshape([ gcd(i,j) + 0. for i=1:4 for j=1:3], 3,4)
 @test FeKode.jacobian(a[:,1:4]) == 0
 
 ## FIXME : add test for others cases than 2D dimension
-base = FeKode.P1Basis(2)
-m, n = FeKode.computeφAndDφOnGaußPoints(base, FeKode.IntegrationFormula(2, 2))
+basis = FeKode.P1Basis(2)
+m, n = FeKode.computeφAndDφOnGaußPoints(basis, FeKode.IntegrationFormula(2, 2))
 m_ref = [1 4 1; 4 1 1 ; 1 1 4] / 6.
 n_ref = [-1. -1; 1 0; 0 1]
 n_ref = repeat(reshape(n_ref,3,2,1), outer=(1,1,3))
@@ -20,6 +20,6 @@ n_ref = repeat(reshape(n_ref,3,2,1), outer=(1,1,3))
 #
 dataDir = joinpath(rootDir, "data")
 mesh = FeKode.readMeshFromFileAsciiVtk(joinpath(dataDir, "twoTriangles.vtk"))
-@test FeKode.stiffnesAndMassMatrix(mesh, 2, 2, base)
+FeKode.stiffnesAndMassMatrix(mesh, 2, 2, basis)
 
 end

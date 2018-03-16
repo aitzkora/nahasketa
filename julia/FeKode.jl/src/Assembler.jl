@@ -63,7 +63,7 @@ function stiffnesAndMassMatrix(mesh::Mesh, dim::Int, order::Int, fun::BasisFunct
         invBₖ = inv(Bₖ'Bₖ)
         Jₖ    = jacobian(pts)
         mElem = φ * Diagonal(Jₖ .* form.weights) * φ'
-        kelem = sum([form.weights[l] * jacobian * Dφ[:,:,l] * invBₖ * Dφ[:,:,l]' for l =1:p])
+        kElem = sum([form.weights[l] * Jₖ * Dφ[:,:,l] * invBₖ * Dφ[:,:,l]' for l =1:p])
         M += sparse(cartesianProduct(indices, indices)..., mElem[:], n, n)
         K += sparse(cartesianProduct(indices, indices)..., kElem[:], n, n)
     end
