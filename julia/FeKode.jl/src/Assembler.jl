@@ -20,8 +20,9 @@ jacobian(x)
 function jacobian(x::Array{Float64,2})
     m = mapRefToLocal(x)
     n = size(m, 2)
-    F = svdfact(m)
-    return abs(prod(F[:S]))
+    #F = svdfact(m)
+    F = qrfact(m)
+    return abs(prod(diag(F[:R])))
 end
 
 function computeφAndDφOnGaußPoints(fun::BasisFunction, form::IntegrationFormula)
