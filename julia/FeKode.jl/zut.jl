@@ -2,32 +2,33 @@ using FeKode
 m = FeKode.squareMeshGenerate(0.,1., 0. , 1., 3, 3)
 fe = FeKode.P1Basis(2)
 M,K = FeKode.stiffnesAndMassMatrix(m, 2, 2, fe)
-u = (x,y) -> y*(1-y)x.^3
-f = (x,y) -> 6*x*y*(1-y)-2*x.^3
-function isOnBoundary(x,y)
-    if abs(x) < 1e-20 return true end
-    if abs(y) < 1e-20 return true end
-    if abs(1-x) < 1e-20 return true end
-    if abs(1-y) < 1e-20 return true end
-    return false
-end
-boundary = []
-for index = 1:size(m.points,1)
-    if isOnBoundary(m.points[index,1:2]...)
-        append!(boundary,index)
-    end
-end
+u = (x,y,z) -> y.*(1-y).*x.^3
+f = (x,y,z) -> 6*x.*y.*(1-y)-2*x.^3
+F = f(m.points[:,1], m.points[:,2], m.points[:,3])
+
+#determine boundary
+boundary =  m.isOnBoundary;
 sort!(boundary)
+
+# substract boundary contribution to the right hand side
+F -= K[:, boundary] * u(m.points[boundary,1], m.points[boundary,2], m.points[boundary,3])
+indexes=filter(x->isempty(searchsorted(boundary,x)),1:size(F,1))
+Fn = sparsevec((1:size(F,1))[indexes], F[indexes])
+
+# suppress rows and columns from the K matrix
 I,J,V=findnz(K)
-index = 1
-while index < size(J,1)
-    pos = searchsorted(boundary,J[index])
-    if ~isempty(pos)
-        deleteat!(I,index)
-        deleteat!(J,index)
-        deleteat!(V,index)
-    else 
-    index += 1
+In = Int64[]
+Jn = Int64[]
+Vn = Float64[]
+
+for i = 1:size(I, 1)
+    IIsNotBoundary = isempty(searchsorted(boundary, I[i]))
+    JIsNotBoundary = isempty(searchsorted(boundary,J[i]))
+    if IIsNotBoundary && JIsNotBoundary
+        append!(In, I[i])
+        append!(Jn, J[i])
+        append!(Vn, V[i])
     end
 end
-Kwb= sparse(I,J,V)
+Kn= sparse(In,Jn,Vn)
+un = Kn\Fn
