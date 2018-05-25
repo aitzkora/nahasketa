@@ -1,7 +1,10 @@
+#+STARTUP: latexpreview
+#+LaTeX_HEADER: \usepackage{amsmath}
 * First example of FE code : Wave equation
 ** We want to modelize the following equation
-  $$\frac{\partial^2 u}{\partial^2 t} = \Delta u \, \forall x \in \Omega$$
+   $$\frac{\partial^2 u}{\partial^2 t} = \Delta u \, \forall x \in \Omega$$
 
+   
 ** How to compute matrices of mass and stiffness
 *** Mass matrix
 **** integration on the reference element
@@ -10,15 +13,17 @@
     we can compute this integral on a the reference element 
     $$T = \{ (x,y,0) \, : \: x \geqslant 0 \, , y \geqslant 0 \, x+y = 1 \}$$
     To justify the computation one could embed the triangle $(P_0,P_1,P_2)$
-    $$T_k = \left\{ B_k \left(\begin{array}{c} r \\ s\end{array}\right) \, : \, , r,s  \geqslant 
-    0, r+s = 1 \right\} + P_0 \mbox{ with }  
+    $$ T_k = \left\{ B_k \left(\begin{array}{c} r \\ s\end{array}\right) \, : \, , r,s \geqslant 0, r+s = 1 \right\} + P_0 $$
+    with
+    $$
     B_k = 
-    \left(\begin{array}{c} 
+    \left(\begin{array}{cc} 
     p^1_x - p^0_x & p^2_x - p^0_x \\
     p^1_y - p^0_y & p^2_y - p^0_y \\
     p^1_z - p^0_z & p^2_z - p^0_z
-    \end{array}\right)
-    $$ into the affine manifold
+    \end{array}\right) 
+    $$
+    into the affine manifold
     $$\mathcal{V}_k = \Phi_k(\mathbb{R}^2) = 
     \left\{ B_k \left(\begin{array}{c} r \\ s\end{array}\right) \, : \, , r,s 
     \in \mathbb{R}^2 \right\} + P_0 $$
@@ -37,6 +42,7 @@
     p^2_z - p^0_z
     \end{array}\right)
     \right\| drds$$
+
 *** using a quadrature formula
     now to compute the integral, one could use a Gauß formula
-    $$ \int_T f(x) dx  = \sum_i f(\xi_i) w_i $$
+ $$ \int_T f(x) dx  = \sum_i f(\xi_i) w_i $$

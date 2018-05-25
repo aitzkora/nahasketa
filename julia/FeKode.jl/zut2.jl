@@ -1,9 +1,9 @@
 using FeKode
-m = FeKode.meshGenerate2D(0.,1., 0. , 1., 4, 4)
-fe = FeKode.P1Basis(2)
+m = FeKode.meshGenerate1D(0.,1., 10)
+fe = FeKode.P1Basis(1)
 M, K = FeKode.stiffnesAndMassMatrix(m, 2, 2, fe)
-u = (x,y,z) -> y.*(1-y).*x.^3
-f = (x,y,z) -> 6*x.*y.*(1-y)-2*x.^3
+u = (x,y,z) -> x.^3
+f = (x,y,z) -> 6*x
 F = f(m.points[:,1], m.points[:,2], m.points[:,3])
 
 #determine boundary

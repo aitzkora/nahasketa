@@ -27,5 +27,5 @@ function readMeshFromFileVtk(fileName::String)
          i += currentCellSize+1
          cellIdx += 1
     end
-    return Mesh(points, cells)
+    return Mesh(points, cells, [])
 end

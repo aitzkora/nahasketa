@@ -19,7 +19,7 @@ beware that cells indexing begins to 1 (for julia, not zero (vtk))
 function meshGenerate1D(xMin::Float64, xMax::Float64, nX::Int)
    x=linspace(xMin, xMax, nX)
    points = hcat([[i, 0, 0. ] for i in x]...)'
-   cells = vcat([vcat([(i-1) i]) for i=1:nX-1]...)
+   cells = vcat([vcat([i i+1]) for i=1:nX-1]...)
    ε=1e-20
    isBoundary = (x,y,z) -> abs(x-xMin)<ε || abs(x-xMax) <ε
    boundary=filter(x->isBoundary(points[x,:]...), 1:size(points,1))
