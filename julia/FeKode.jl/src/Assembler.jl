@@ -24,6 +24,12 @@ function jacobian(x::Array{Float64,2})
     F = qrfact(m)
     return abs(prod(diag(F[:R])))
 end
+"""
+computeφAndDφOnGaußPoints(fun::BasisFunction, form::IntegrationFormula)
+
+   Apply the basis functions on Gauß points (functions on rows, points on columns)
+
+"""
 
 function computeφAndDφOnGaußPoints(fun::BasisFunction, form::IntegrationFormula)
 m, n = size(fun.Dφ)

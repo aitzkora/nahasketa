@@ -1,10 +1,11 @@
 using FeKode
-m = FeKode.meshGenerate1D(0.,1., 10)
+N= 10
+m = FeKode.meshGenerate1D(0.,1., N)
 fe = FeKode.P1Basis(1)
-M, K = FeKode.stiffnesAndMassMatrix(m, 2, 2, fe)
+K, M = FeKode.stiffnesAndMassMatrix(m, 1, 2, fe)
 u = (x,y,z) -> x.^3
 f = (x,y,z) -> 6*x
-F = f(m.points[:,1], m.points[:,2], m.points[:,3])
+F = M * f(m.points[:,1], m.points[:,2], m.points[:,3])
 
 #determine boundary
 boundary =  m.isOnBoundary;
@@ -34,4 +35,4 @@ append!(Jn, boundary)
 append!(Vn, ones(size(boundary)))
 
 Kn= sparse(In,Jn,Vn)
-sol=Kn\F
+sol=Kn\F;
