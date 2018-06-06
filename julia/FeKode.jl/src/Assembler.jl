@@ -79,9 +79,26 @@ end
 
 
 """
-removeRowsAndColsAndPutOnes(M::SparseMatrixCSC{Float64,Int64}, indices::Array{Int64})
+    removeRowsAndColsAndPutOnes(M::SparseMatrixCSC, indices::Array{Int64})
 
+Return a sparse matrix equal to `M` but with columns and rows with indexes
+in `indices` removed and replaced by ones on the diagonal
 
+# Example
+```jldoctest
+
+julia> A=(1:3).^(1.:3.)'
+3×3 Array{Float64,2}:
+ 1.0  1.0   1.0
+ 2.0  4.0   8.0
+ 3.0  9.0  27.0
+
+julia> FeKode.removeRowsAndColsAndPutOnes(sparse(A),[1,3])
+3×3 SparseMatrixCSC{Float64,Int64} with 3 stored entries:
+  [1, 1]  =  1.0
+  [2, 2]  =  4.0
+  [3, 3]  =  1.0
+```
 """
 function removeRowsAndColsAndPutOnes(M::SparseMatrixCSC{Float64,Int64}, indices::Array{Int64})
     Ii, Ji, Vi=findnz(M)
