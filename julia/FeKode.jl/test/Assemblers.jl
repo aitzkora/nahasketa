@@ -33,6 +33,7 @@ Mᵥ = [eye(3) - v*v' zeros(3,1); zeros(1,3) 9]
 #1D test with laplacian
 N = 10
 m = FeKode.meshGenerate1D(0.,1., N)
+boundary =  m.isOnBoundary;
 fe = FeKode.P1Basis(1)
 K, M = FeKode.stiffnesAndMassMatrix(m, 1, 2, fe)
 x = m.points[:,1]
@@ -40,17 +41,38 @@ u = x.^3
 f = -6*x
 F = M * f
 
-##determine boundary
-boundary =  m.isOnBoundary;
-
-# substract boundary contribution to the right hand side
+## substract boundary contribution to the rhs
 F -= K[:, boundary] * u[boundary]
 F[boundary] = u[boundary]
 
-# suppress rows and columns from the K matrix
+## suppress rows and columns from the K matrix
 Kn = FeKode.removeRowsAndColsAndPutOnes(K, boundary)
 
-# retrieve the solution
+## retrieve the solution
 sol=Kn\F
 @test norm(sol-u) ≈ 0. atol = 1e-12
+
+#2D Laplacian test
+N = 10
+m = FeKode.meshGenerate2D(0.,1., 0. , 1., N, N)
+boundary =  m.isOnBoundary;
+fe = FeKode.P1Basis(2)
+K, M = FeKode.stiffnesAndMassMatrix(m, 2, 2, fe)
+x = m.points[:, 1]
+y = m.points[:, 2]
+u = y.*(1-y).*x.^3
+f = -6*x.*y.*(1-y)+2*x.^3
+F = M * f
+
+## substract boundary contribution to the rhs
+F -= K[:, boundary] * u[boundary]
+F[boundary] = u[boundary]
+
+
+##suppress rows and columns from the K matrix
+Kn = FeKode.removeRowsAndColsAndPutOnes(K, boundary)
+
+## check that the error is less than h^2
+sol=Kn\F
+@test norm(sol-u) ≈ 0. atol=1e-2
 end
