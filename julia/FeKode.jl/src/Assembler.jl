@@ -76,3 +76,31 @@ function stiffnesAndMassMatrix(mesh::Mesh, dim::Int, order::Int, fun::BasisFunct
     end
     return K,M
 end
+
+
+"""
+removeRowsAndColsAndPutOnes(M::SparseMatrixCSC{Float64,Int64}, indices::Array{Int64})
+
+
+"""
+function removeRowsAndColsAndPutOnes(M::SparseMatrixCSC{Float64,Int64}, indices::Array{Int64})
+    Ii, Ji, Vi=findnz(M)
+    In = Int64[]
+    Jn = Int64[]
+    Vn = Float64[]
+
+    boundary = sort(indices)
+    for i = 1:size(Ii, 1)
+        IIsNotBoundary = isempty(searchsorted(boundary, Ii[i]))
+        JIsNotBoundary = isempty(searchsorted(boundary, Ji[i]))
+        if IIsNotBoundary && JIsNotBoundary
+            append!(In, Ii[i])
+            append!(Jn, Ji[i])
+            append!(Vn, Vi[i])
+        end
+    end
+    append!(In, boundary)
+    append!(Jn, boundary)
+    append!(Vn, ones(size(boundary)))
+    return sparse(In,Jn,Vn)
+end
