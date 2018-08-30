@@ -1,0 +1,110 @@
+\documentclass[10pt]{article}
+\usepackage[francais]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsfonts, amsmath, amssymb}
+\usepackage[dvips]{graphicx}
+\usepackage[a4paper,vmargin=20mm,hmargin=20mm]{geometry}
+\pagestyle{empty}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\norm}[1]{\ensuremath{\Arrowvert #1 \Arrowvert}}
+\newcommand{\trans}[1]{\ensuremath{{#1}^{\!\top}}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\conv}{\mathrm{conv} \;}
+\newcommand{\tr}{\mathrm{tr} \;}
+\newcommand{\matr}[2]{\R^{#1 \times #2}}
+\newcommand{\nilp}{\mathcal{N}}
+\newcommand{\trnul}{\mathrm{Vect}\{{\bf I}\}_n^{\bot}}
+\newcommand{\tran}{^{\top}}
+\newcommand{\ei}[1]{{\bf e}_{#1}}
+\newcommand{\Eij}[1]{{\bf E}_{#1}}
+\newcommand{\psf}[2]{\leqslant #1, #2 \geqslant}
+\begin{document}
+{\bf \Large l'enveloppe convexe des matrices nilpotentes est le noyau de la trace}
+
+le but de cette présentation est de démontrer l'égalité suivante
+$$
+\conv \{ M \in \matr{n}{n} \;:\; \exists k \in \N \, , \, \\ M^k = 0\} = \{A \in \matr{n}{n} : \tr A = 0  \}
+$$
+Avant de commencer la démonstration, on definit quelques notations
+
+\begin{itemize} 
+        \item l'ensemble $\nilp$ des matrices nilpotentes
+$$
+            \{ M \in \matr{n}{n} \;:\; \exists k \in \N \, , \, \\ M^k = 0\}
+$$
+   \item et l'ensemble $\trnul$ des matrices à trace nulle - orthogonal de la droite engendrée par la matrice identité pour le produit scalaire 
+       $\leqslant x, y \geqslant = \tr (x\tran y)$
+$$
+\{A \in \matr{n}{n} : \tr A = 0  \}
+$$
+\end{itemize}
+
+\section{Inclusion facile}
+
+Pour démontrer, l'égalité des ensembles on va demontrer les deux inclusions. On commence par la plus simple
+$$
+\conv \nilp \subset \trnul
+$$
+si $x \in \conv \nilp $ alors $\exists \alpha \in [0,1]$ et $u,v \in \nilp$ tels que
+$$
+x = \alpha u + (1-\alpha) v
+$$
+Puisque $u \in \nilp$ alors $\exists k$ tel que $u^k = 0$. On en déduit que les valeurs propres de u sont nulles et donc leur somme aussi.
+Donc
+$$
+\tr u = 0  \mbox { et pour les mêmes raisons } \tr v = 0
+$$
+donc
+$$
+\tr x = 0
+$$
+\section{Inclusion plus difficile}
+
+\subsection{$\conv \nilp$ est un espace vectoriel}
+\begin{itemize}
+    \item $\nilp$ est stable par multiplication par un scalaire, en effet soit $\lambda \in \R$
+$$
+A^k = 0 \Rightarrow \lambda^k A^k = 0 \Rightarrow \lambda A \in \nilp
+$$
+  il en va de même pour son enveloppe convexe
+$$
+\lambda \dot ( \alpha u + (1-\alpha) v ) = \alpha \underbrace{\lambda u}_{\in \nilp}  + (1- \alpha) \underbrace{\lambda v}_{\in \nilp}
+$$
+   \item $\conv \nilp $ est stable par addition :  soient $x,y \in \conv \nilp$ , comme $ \conv \nilp$ est convexe et d'interieur non vide
+$$
+        x + y = 2 \left(\frac{1}{2} x + \frac{1}{2} y \right)  \in \conv \nilp
+$$
+\end{itemize}
+
+\subsection{base de $\trnul$}
+
+On sait que $\conv \nilp \subset \trnul$, donc $\dim \conv \nilp \leqslant \dim \trnul$, or par defition du noyau d'une forme linéaire 
+on a
+$$
+\dim \trnul = \dim \matr{n}{n} - 1  = n^2  - 1
+$$
+Supposons que l'on trouve une famille libre d'éléments de $\trnul$ de cardinal $n^2 - 1 $ -  donc une base de $\trnul$ - dont chaque élément
+soit contenu dans $\conv \nilp$, alors nécéssairement on aura l'égalité des sous espaces
+
+Soit $(\ei{i})_{i=1\cdots n}$ les vecteurs de la base canonique de $\R^n$, on rappelle que les
+$$
+\Eij{ij} = \ei{i} \ei{j} \tran \mbox{ pour } i,j \in \{1 \cdots n\}^2
+$$
+forment une base de $\matr{n}{n}$  et la règle de calcul suivante
+$$
+\Eij{ij}\Eij{kl} = \delta_{jk}\Eij{il}
+$$
+Alors on s'interesse à la famille
+$$
+\mathcal{F} = \left(\Eij{ij}\right)_{i \neq j} \cup \left(\Eij{11}-\Eij{ii}\right)_{i=2\cdots n}
+$$
+de cardinal $n*(n-1) + n-1 = n^2 -1$
+
+\subsubsection{$\mathcal{F}$ est libre}
+
+
+
+\end{document}
