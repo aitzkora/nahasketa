@@ -20,10 +20,11 @@
 \newcommand{\tran}{^{\top}}
 \newcommand{\ei}[1]{{\bf e}_{#1}}
 \newcommand{\Eij}[1]{{\bf E}_{#1}}
-\newcommand{\psf}[2]{\leqslant #1, #2 \geqslant}
+\newcommand{\psf}[2]{\ll #1, #2 \gg}
 \begin{document}
-{\bf \Large l'enveloppe convexe des matrices nilpotentes est le noyau de la trace}
-
+\begin{center}
+{\bf \Large $ \conv \nilp = \trnul $}
+\end{center}
 le but de cette présentation est de démontrer l'égalité suivante
 $$
 \conv \{ M \in \matr{n}{n} \;:\; \exists k \in \N \, , \, \\ M^k = 0\} = \{A \in \matr{n}{n} : \tr A = 0  \}
@@ -33,12 +34,12 @@ Avant de commencer la démonstration, on definit quelques notations
 \begin{itemize} 
         \item l'ensemble $\nilp$ des matrices nilpotentes
 $$
-            \{ M \in \matr{n}{n} \;:\; \exists k \in \N \, , \, \\ M^k = 0\}
+           \nilp =  \{ M \in \matr{n}{n} \;:\; \exists k \in \N \, , \, \\ M^k = 0\}
 $$
    \item et l'ensemble $\trnul$ des matrices à trace nulle - orthogonal de la droite engendrée par la matrice identité pour le produit scalaire 
-       $\leqslant x, y \geqslant = \tr (x\tran y)$
+       $\psf{x}{y} = \tr (x\tran y)$
 $$
-\{A \in \matr{n}{n} : \tr A = 0  \}
+\trnul = \{A \in \matr{n}{n} : \tr A = 0  \}
 $$
 \end{itemize}
 
@@ -87,7 +88,7 @@ $$
 \dim \trnul = \dim \matr{n}{n} - 1  = n^2  - 1
 $$
 Supposons que l'on trouve une famille libre d'éléments de $\trnul$ de cardinal $n^2 - 1 $ -  donc une base de $\trnul$ - dont chaque élément
-soit contenu dans $\conv \nilp$, alors nécéssairement on aura l'égalité des sous espaces
+soit contenu dans $\conv \nilp$, alors nécéssairement on aura l'égalité des sous-espaces
 
 Soit $(\ei{i})_{i=1\cdots n}$ les vecteurs de la base canonique de $\R^n$, on rappelle que les
 $$
@@ -101,10 +102,73 @@ Alors on s'interesse à la famille
 $$
 \mathcal{F} = \left(\Eij{ij}\right)_{i \neq j} \cup \left(\Eij{11}-\Eij{ii}\right)_{i=2\cdots n}
 $$
-de cardinal $n*(n-1) + n-1 = n^2 -1$
+de cardinal $n(n-1) + n-1 = n^2 -1$
 
 \subsubsection{$\mathcal{F}$ est libre}
 
+Soit $(\lambda_{ij}, \mu_k)_{ i \neq j, k=2\cdots n}$ des réels tels que 
 
+$$
+ \sum_{\{i,j : i \neq j\}} \lambda_{ij} \Eij{ij} + \sum_{k=2\cdots n} (\Eij{11} - \Eij{kk}) \mu_k = 0
+$$
+alors on va montrer que nécessairement les $\lambda$ et les $\mu$ sont nuls.\ 
 
+soit $(r,s)$ tel que $r \neq s$ alors en multipliant à droite par $\Eij{rs}$ on obtient que 
+$$
+ \sum_{\{i,j : i \neq j\}} \lambda_ij \delta_{jr} \Eij{is} + \sum_{k=2\cdots n} (\delta_{1r}\Eij{1s} - \delta_{kr}\Eij{ks}) \mu_k = 0
+$$
+qui se réduit à 
+$$
+ \sum_{i} \lambda_{ir} \Eij{is} = 0
+$$
+car $r = 1$ et $k = r$ avec $k > 2$ est impossible
+Comme les $\Eij{ij}$ forment une famille libre, toute sous famille est libre et nécessairement $\lambda_{ir} = 0$. Pour chaque $i$ donné,
+en choissisant $r \neq i $, on en déduit que les $\lambda$ sont tous nuls. Donc il reste dans la somme
+$$
+ \sum_{k=2\cdots n} (\Eij{11} - \Eij{kk}) \mu_k = 0
+$$
+Si on multiplie par $\Eij{ll}$ pour $l \geqslant 2$, on a
+$$
+ \sum_{k=2\cdots n} (\delta_{1l}\Eij{1l} - \delta_{kl}\Eij{kl}) \mu_k = 0
+$$
+qui se réduit à
+$$
+ (\Eij{11} - \Eij{ll}) \mu_l = 0
+$$
+comme $l \geqslant 2$, on a clairement $\mu_l = 0$ pour $l \geqslant 2$.
+
+\subsubsection{$\mathcal{F} \subset  \conv \nilp$}
+
+ \begin{itemize}
+     \item si $M = \Eij{ij}$ avec $i \neq $, il est trivial que que $M \in nilp$, i.e.
+$$
+\Eij{ij}\Eij{ij} = \delta_{ij} E_{ij} = 0 
+$$
+car $i \neq j$. 
+  \item si $M = \Eij{11} - \Eij{kk} $ avec $ k \geqslant 2$, alors posons
+
+$$
+\xi_k = \Eij{11} - \frac{1}{2} \Eij{1k} + 2 \Eij{k1} -\Eij{kk}
+$$
+on vérifie que
+$$
+\xi_k^2 = \Eij{11} - \frac{1}{2} \Eij{1k} - \Eij{11} + \frac{1}{2} \Eij{1k} + 2 \Eij{k1} - \Eij{kk} - 2\Eij{k1} + \Eij{kk} = 0
+$$
+donc $\xi_k \in \nilp$
+de même
+$$
+\zeta_k = \Eij{11} + \frac{1}{2} \Eij{1k} - 2\Eij{k1} -\Eij{kk} 
+$$
+verifie
+$$
+\zeta_k^2 = \Eij{11} + \frac{1}{2} \Eij{1k} -\Eij{11} -\frac{1}{2} \Eij{1k} - 2\Eij{k1} - \Eij{kk}  + 2 \Eij{k1} + \Eij{kk} = 0
+$$
+et donc $\zeta_k \in \nilp $.
+alors
+$$
+M =  \frac{1}{2} \xi_k + \frac{1}{2} \zeta_k \in \conv \nilp
+$$
+ \end{itemize}
+
+donc $\mathcal{F} \subset \conv \nilp$
 \end{document}
