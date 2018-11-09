@@ -1,0 +1,19 @@
+#!/bin/bash
+function f902F90 {
+izen=`basename -s .f90 $1`
+string="'s/$izen.f90/$izen.F90/g'"
+echo sed -i -e $string $2
+}
+
+cmake_files=`find . -name "CMakeLists.txt"`
+
+for i in $cmake_files; do
+   for j in $(cat list_fic); do
+        cut_name=$(basename $j)
+        is_inside=`grep "$cut_name" $i`
+        if [ -n "$is_inside" ]; then
+          #echo $i $j "->" $is_inside
+           f902F90 "$j" "$i"
+        fi
+   done
+done
