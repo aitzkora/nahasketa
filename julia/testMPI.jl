@@ -1,5 +1,5 @@
 import MPI
-
+using Statistics:mean
 function communicate()
     MPI.Init()
     comm = MPI.COMM_WORLD
@@ -14,7 +14,7 @@ function communicate()
     else
         MPI.Recv!(recv_mesg, 0, 0, comm)
     end
-    m = mean(recv_mesg, 1)
+    m = mean(recv_mesg, dims=1)
     sleep(rank * 2)
     println("results on rank ", rank, ": ", m)
     MPI.Barrier(comm)
