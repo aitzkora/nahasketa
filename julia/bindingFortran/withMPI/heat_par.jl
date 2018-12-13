@@ -1,5 +1,26 @@
 import MPI
 
+function usage()
+
+  arg1 = ARGS[1]
+  println("Usage: mpirun -np (px*py) ", arg1, " nx ny iter_max px py")
+  println("    nx       number of discretisation points in X")
+  println("    ny       number of discretisation points in Y")
+  println("    iter_max maximal number of iterations in temporal loop")
+  println("    px       X process number")
+  println("    py       Y process number")
+  exit(code=1)
+end
+
+"""
+to2D(dims::Tuple{Int64, Int64}, rank::Int64)
+
+convert a 1D rank to a 2D rank wrt a cartesian grids 
+"""
+
+function to2D(dims::Tuple{Int64, Int64}, rank)
+    return (rank % dims[1], rank % dims[2])
+end
 
 function main()
     MPI.Init()
