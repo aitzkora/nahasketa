@@ -1,13 +1,14 @@
 Nahasketa
 ==========
-- small programs
+- sandbox to do tests
+
 cpp
 ---
 small tests in c++
 
 python
 ------
-quelques scripts de TP pour du python scientifique
+some hands-on scripts for scientific python
 
 tmux
 ----
