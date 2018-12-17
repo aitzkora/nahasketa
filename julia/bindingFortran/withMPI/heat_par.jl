@@ -45,10 +45,10 @@ function main()
         exit(code=1)
     end
 
-    cellX = nX / pX
-    cellY = nY / pY
-    sizeX = cellX + 2
-    sizeY = cellY + 2
+    snapshotStep = 10
+    snapshotSize = iterMax / snapshotStep
+    solution = zeros(nX, nY, snapshotSize)
+    ccall((:heat, "./libheat.so"), Ref{Int32}, Ref{Int32}, Ref{Int32}, Ref{Int32}, Ref{Int32}, Ptr{Float64}), nX, nY, pX, pY, snapshotStep, solution)
 
     MPI.Finalize()
 end
