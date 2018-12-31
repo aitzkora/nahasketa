@@ -22,6 +22,21 @@ function to2D(dims::Tuple{Int64, Int64}, rank)
     return (rank % dims[1], rank % dims[2])
 end
 
+function setBounds(coo::Tuple{Int,Int} , pX::Int, pY::Int, u::Array{Float64,2})
+    if (coo[1] == 0)
+        u[1,   :] .= 1.
+    end
+    if coo[1] == (pX - 1)
+        u[end, :] .= 1.
+    end
+    if coo[2] == 0
+        u[:,   1] .= 1.
+    end
+    if coo[2] == (pY - 1)
+        u[:, end] .= 1.
+    end
+end
+
 function main()
     MPI.Init()
     comm = MPI.COMM_WORLD
@@ -48,8 +63,12 @@ function main()
     snapshotStep = 10
     snapshotSize = iterMax / snapshotStep
     solution = zeros(nX, nY, snapshotSize)
-    ccall((:heat, "./libheat.so"), Ref{Int32}, Ref{Int32}, Ref{Int32}, Ref{Int32}, Ref{Int32}, Ptr{Float64}), nX, nY, pX, pY, snapshotStep, solution)
+    setBounds(to2D(commRank), pX, pY, solution)
 
+    for time=1:iterMax
+        ccall(((:solve, "./libheat.so"), Ref{Int64}, Ref{Int64}, Ref{Int64}, Ref{Int64},  Ref{Int64},  Ref{Int64}, Ref{Int64}, Ptr{Float64}),
+                                                 nX,         nY,         pX,         pY, snapshotStep, snapshotSize,  iterMax, solution)
+    end
     MPI.Finalize()
 end
 
