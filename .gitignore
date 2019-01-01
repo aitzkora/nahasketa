@@ -6,3 +6,4 @@ tags
 *log
 .ipynb_checkpoints
 build
+*.so

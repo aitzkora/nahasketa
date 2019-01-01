@@ -69,20 +69,21 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
 
   prec = 1e-4
   error = 1e10
-  if (is_master) print '(5(16F5.2))', , pack(solution(:,:, :), .true.)
+  !if (is_master) print '(5(16F5.2))' , pack(solution(:,:, :), .true.)
   u_in(:,:) = solution(:, :, 1)
   do iter= 0, iter_max
 
-      print '(i41x16F5.2)', rank_w,  pack(u_in, .true.)
+      !print '(i41x16F5.2)', rank_w,  pack(u_in, .true.)
+  
       call stencil_4( h_x, h_y, d_t, u_in, u_out, error_loc )
       call MPI_ALLREDUCE( error_loc, error, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
       error = sqrt( error )
 
       if (is_master .and. mod( iter, snapshot_step ) == 0)  then
-          !print * , 'it =', iter, 't = ', iter * d_t, 'err = ', error
+          print * , 'it =', iter, 't = ', iter * d_t, 'err = ', error
           allocate ( sol_space(n_x, n_y) )
           ! call gather_solution( sol_space, n_x, n_y, u_in, ndims, comm2D, is_master )
-          !solution(:, :, iter / snapshot_size) = sol_space
+          solution(:, :, iter / snapshot_size) = sol_space
           deallocate( sol_space )
       end if
 

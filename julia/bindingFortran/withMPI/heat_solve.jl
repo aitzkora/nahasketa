@@ -63,8 +63,9 @@ function main()
 
     snapshotSize = iterMax ÷ snapshotStep
     solution = zeros(nX, nY, snapshotSize)
-    setBounds(to2D((pX, pY), commRank), pX, pY, solution[:, :, 1])
-
+    sol_init = zeros(nX, nY)
+    setBounds(to2D((pX, pY), commRank), pX, pY, sol_init)
+    solution[:, : , 1] = sol_init
     ccall((:solve, "./libheat.so"), Cvoid, (Ref{Int32}, Ref{Int32}, Ref{Int32}, Ref{Int32},  Ref{Int32},  Ref{Int32}, Ref{Int32}, Ptr{Float64}),
                                                  nX,         nY,         pX,         pY, snapshotStep, snapshotSize,  iterMax, solution)
     MPI.Finalize()
