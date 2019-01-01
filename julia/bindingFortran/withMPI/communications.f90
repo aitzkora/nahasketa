@@ -63,7 +63,7 @@ subroutine gather_solution(sol, n_x, n_y, u, ndims, comm2D, is_master)
      call MPI_GATHER( u_vec , size( u_vec ) , MPI_DOUBLE_PRECISION, &
                   vec_temp, size( u_vec ), MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr )
 
-    if (is_master) then
+     if (is_master) then
      sol  = reshape( vec_temp, [n_x, n_y] )
      call MPI_COMM_SIZE(MPI_COMM_WORLD, size_w, ierr)
      do rank = 1, size_w

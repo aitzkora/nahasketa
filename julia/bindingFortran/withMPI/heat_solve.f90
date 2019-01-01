@@ -10,7 +10,7 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
   implicit none
   integer(c_int) :: n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max
   real(c_double), dimension(n_x,n_y,snapshot_size) :: solution
-  integer :: iter, size_x, size_y, ierr
+  integer :: iter, size_x, size_y, ierr, j, k
   integer :: rank_w, size_w, rank_2D, comm2D, type_row, alloc_status
   integer, parameter :: ndims = 2, N = 1, S = 2, E = 3, W = 4
   logical :: is_master, reorder = .true.
@@ -27,15 +27,6 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
 
   is_master = (rank_w == 0)
 
-  !if (is_master) then
-  !print *, "n_x = ", n_x
-  !print *, "n_y = ", n_y
-  !print *, "p_x = ", p_x
-  !print *, "p_x = ", p_y
-  !print *, "snapshot_step = ", snapshot_step
-  !print *, "snapshot_size = ", snapshot_size
-
-  !end if
   size_x = 2 + n_x / p_x
   size_y = 2 + n_y / p_y
 
@@ -69,26 +60,29 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
 
   prec = 1e-4
   error = 1e10
-  !if (is_master) print '(5(16F5.2))' , pack(solution(:,:, :), .true.)
   u_in(:,:) = solution(:, :, 1)
   do iter= 0, iter_max
 
-      !print '(i41x16F5.2)', rank_w,  pack(u_in, .true.)
-  
       call stencil_4( h_x, h_y, d_t, u_in, u_out, error_loc )
       call MPI_ALLREDUCE( error_loc, error, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
       error = sqrt( error )
 
-      if (is_master .and. mod( iter, snapshot_step ) == 0)  then
-          print * , 'it =', iter, 't = ', iter * d_t, 'err = ', error
-          allocate ( sol_space(n_x, n_y) )
-          ! call gather_solution( sol_space, n_x, n_y, u_in, ndims, comm2D, is_master )
+      if (mod( iter, snapshot_step ) == 0)  then
+          if (is_master) then
+            print * , 'it =', iter, 't = ', iter * d_t, 'err = ', error
+            allocate ( sol_space(n_x, n_y) )
+          end if
+
+          call gather_solution( sol_space, n_x, n_y, u_in, ndims, comm2D, is_master )
+
+          if (is_master) then
           solution(:, :, iter / snapshot_size) = sol_space
           deallocate( sol_space )
+          end if
       end if
 
       call ghosts_swap( comm2D, type_row, neighbour, u_in )
-      u_in = u_out
+      u_in(2:size( u_in, 1) - 1, 2: size( u_in, 2) - 1 ) = u_out(2:size( u_in, 1) - 1, 2: size( u_in, 2) - 1 )
       if (error <= prec) exit
   end do
 

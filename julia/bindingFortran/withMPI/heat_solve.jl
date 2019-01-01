@@ -69,6 +69,7 @@ function main()
     ccall((:solve, "./libheat.so"), Cvoid, (Ref{Int32}, Ref{Int32}, Ref{Int32}, Ref{Int32},  Ref{Int32},  Ref{Int32}, Ref{Int32}, Ptr{Float64}),
                                                  nX,         nY,         pX,         pY, snapshotStep, snapshotSize,  iterMax, solution)
     MPI.Finalize()
+
 end
 
 main()
