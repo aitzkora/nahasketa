@@ -18,10 +18,20 @@ program grep
   i = 1
   do
       read(unit_read, '(A)', iostat=ios) current_line
-      if (index(current_line, trim(pattern)) /= 0) print '(i0A)', i, ":"//current_line
+      if (index(current_line, trim(pattern)) /= 0) then 
+          print '(i0A)', i, ":"//current_line
+      endif
       if (ios /= 0) exit
       i = i + 1
   end do
   close( unit_read )
+
+ contains
+pure function put_in_pink(str) result(str_pink)
+     character(len=60), intent(in) :: str
+     character(*) :: str_pink
+     end function
+
+
 
 end program grep
