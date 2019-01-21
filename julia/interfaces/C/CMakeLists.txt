@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.9)
+project(cBindings DESCRIPTION "simple C/Julia bindings ")
+add_library(mysum SHARED mysum.c)
+add_library(mysum2 SHARED mysum2.cpp)
+add_library(juliafun SHARED callJuliaFun.c)
+install(TARGETS mysum DESTINATION ${CMAKE_SOURCE_DIR})
+install(TARGETS mysum2 DESTINATION ${CMAKE_SOURCE_DIR})
+install(TARGETS juliafun DESTINATION ${CMAKE_SOURCE_DIR})
