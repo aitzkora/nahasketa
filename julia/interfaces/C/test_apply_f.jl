@@ -1,5 +1,5 @@
 a = collect(1.:10.)
 fun = @cfunction(x->x*x, Float64, (Float64,))
 b = zeros(10)
-s = ccall((:apply_f, "./libjuliafun.so"), Cvoid, (Ptr{Cvoid}, Cint, Ptr{Cdouble}, Ptr{Cdouble}), fun, 10, a, b)
+s = ccall((:apply_f, "libjuliafun.so"), Cvoid, (Ptr{Cvoid}, Cint, Ptr{Cdouble}, Ptr{Cdouble}), fun, 10, a, b)
 println("b = $b")
