@@ -6,3 +6,5 @@ tags
 *log
 .ipynb_checkpoints
 build
+*slides.html
+*.so
