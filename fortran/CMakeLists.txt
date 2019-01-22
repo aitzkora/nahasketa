@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.10)
+project(fourreTout)
+enable_language(Fortran)
+file(GLOB SOURCES "*.f90")
+foreach(src ${SOURCES})
+     get_filename_component(src_we ${src} NAME_WE)
+     add_executable(${src_we} ${src})
+endforeach()
