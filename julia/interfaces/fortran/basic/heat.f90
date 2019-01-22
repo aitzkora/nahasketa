@@ -1,10 +1,9 @@
 module heat
+    use iso_c_binding, only: c_int32_t, c_double
     public :: kernel
 contains
-    ! FIXME : test is pure is necessarry or not
-    pure subroutine kernel(m, n, u_in,  u_out, error) bind( C, name="heatKernel" )
+    subroutine kernel(m, n, u_in,  u_out, error) bind( C, name="heatKernel" )
 
-        use iso_c_binding, only: c_int32_t, c_double
         implicit none
         integer(c_int32_t), intent(in) :: m, n
         real(c_double), dimension( 1:m, 1:n ), intent(in) :: u_in
