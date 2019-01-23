@@ -4,15 +4,15 @@ public :: ghosts_swap, gather_solution
 contains
 
 subroutine ghosts_swap(comm, type_row, neighbour, u)
-  use iso_c_binding, only: c_int64_t, c_double
+  use iso_c_binding, only: c_int32_t, c_double
   use mpi
   implicit none
-  integer(c_int64_t), intent(in) :: comm, type_row
-  integer(c_int64_t), dimension(4), intent(in) :: neighbour
+  integer(c_int32_t), intent(in) :: comm, type_row
+  integer(c_int32_t), dimension(4), intent(in) :: neighbour
   real(c_double), dimension(:, :), intent(inout) :: u
-  integer(c_int64_t), parameter ::  N  = 1, S = 2, E = 3, W = 4
-  integer(c_int64_t) :: ierr, s_tag, r_tag
-  integer(c_int64_t), dimension(MPI_STATUS_SIZE) :: stat
+  integer(c_int32_t), parameter ::  N  = 1, S = 2, E = 3, W = 4
+  integer(c_int32_t) :: ierr, s_tag, r_tag
+  integer(c_int32_t), dimension(MPI_STATUS_SIZE) :: stat
 
   ! N --> S
   !  N block last significant row goes to S block first ghost row
@@ -41,17 +41,17 @@ subroutine ghosts_swap(comm, type_row, neighbour, u)
 end subroutine ghosts_swap
 
 subroutine gather_solution(sol, n_x, n_y, u, ndims, comm2D, is_master)
-     use iso_c_binding, only: c_int64_t, c_double
+     use iso_c_binding, only: c_int32_t, c_double
      use mpi
      implicit none
      real(c_double), dimension(:,:), intent(in) , contiguous :: u
      real(c_double), dimension(:,:), intent(inout) :: sol
-     integer(c_int64_t),  intent(in) :: comm2D, ndims, n_x, n_y
+     integer(c_int32_t),  intent(in) :: comm2D, ndims, n_x, n_y
      logical :: is_master
 
      real(c_double), allocatable, dimension (:) :: vec_temp, u_vec
-     integer :: cell_x , cell_y, rank, ierr, size_w
-     integer(c_int64_t), dimension(ndims) :: coo
+     integer(c_int32_t) :: cell_x , cell_y, rank, ierr, size_w
+     integer(c_int32_t), dimension(ndims) :: coo
 
      cell_x = size( u, 1 ) - 2
      cell_y = size( u, 2 ) - 2

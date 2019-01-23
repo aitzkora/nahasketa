@@ -5,13 +5,13 @@ module heat
 contains
 
 subroutine stencil_4(hx, hy, dt, u_in, u_out, error)
-    use iso_c_binding, only: c_int64_t, c_double
+    use iso_c_binding, only: c_int32_t, c_double
     implicit none
     real(c_double):: hx, hy, dt
     real(c_double), dimension(:, :), intent(in) :: u_in
     real(c_double), dimension(:, :), intent(out) :: u_out
     real(c_double), intent(out) :: error
-    integer(c_int64_t) :: i, j
+    integer(c_int32_t) :: i, j
     real(c_double) :: w_x, w_y, d
 
     w_x =  dt / (hx * hx)

@@ -3,22 +3,23 @@ module heat_solve
 contains
 
 subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, solution) bind( C, name="solve" )
-  use iso_c_binding, only: c_int64_t, c_double
+  use iso_c_binding, only: c_int32_t, c_double
   use communications
   use heat
   use mpi
   implicit none
-  integer(c_int64_t) :: n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max
-  real(c_double), dimension(:,:,:) :: solution
-  integer(c_int64_t) :: i, size_x, size_y, ierr, save_sol
-  integer(c_int64_t) :: rank_w, size_w, rank_2D, comm2D, type_row, alloc_status
-  integer(c_int64_t), parameter :: ndims = 2, N = 1, S = 2, E = 3, W = 4
+  integer(c_int32_t) :: n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max
+  real(c_double), intent(inout) :: solution(1:n_x, 1:n_y, 1:snapshot_size)
+
+  integer(c_int32_t) :: i, size_x, size_y, ierr
+  integer(c_int32_t) :: rank_w, size_w, rank_2D, comm2D, type_row, alloc_status
+  integer(c_int32_t), parameter :: ndims = 2, N = 1, S = 2, E = 3, W = 4
   logical :: is_master, reorder = .true.
-  integer(c_int64_t), dimension(4) :: neighbour
+  integer(c_int32_t), dimension(4) :: neighbour
   real(c_double) :: h_x, h_y, d_t, error, error_loc, prec
   real(c_double), allocatable, dimension(:,:) ::  u_in,  u_out, sol_space
 
-  integer, dimension(ndims) :: dims , coords
+  integer(c_int32_t), dimension(ndims) :: dims , coords
   logical, dimension(ndims) :: periods = .false.
 
 
@@ -41,22 +42,22 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
   call MPI_CART_CREATE( MPI_COMM_WORLD, ndims, dims, periods, reorder, comm2D, ierr )
   call MPI_COMM_RANK( comm2D, rank_2D, ierr )
 
-  ! Fetch the processus coordinates in the 2-D grid
+  !! Fetch the processus coordinates in the 2-D grid
   call MPI_CART_COORDS( comm2D, rank_2D, ndims, coords, ierr )
 
-  ! Creation of a non-contiguous in memory column type
-  ! to address Fortran storage: no stride of size_x
+  !! Creation of a non-contiguous in memory column type
+  !! to address Fortran storage: no stride of size_x
   call MPI_TYPE_VECTOR( size_y - 2, 1, size_x, MPI_DOUBLE_PRECISION, type_row, ierr )
   call MPI_TYPE_COMMIT( type_row, ierr )
 
-  ! fetching the neighbor ranks
+  !! fetching the neighbor ranks
   call MPI_CART_SHIFT(COMM2D, 0, 1, neighbour( N ), neighbour( S ), ierr )
   call MPI_CART_SHIFT(COMM2D, 1, 1, neighbour( W ), neighbour( E ), ierr )
 
   allocate( u_in(size_x, size_y), stat=alloc_status )
-  if (alloc_status /=0) stop "Not enough memory"
+  if (alloc_status /= 0) stop "Not enough memory"
   allocate( u_out(size_x, size_y), stat=alloc_status )
-  if (alloc_status /=0) stop "Not enough memory"
+  if (alloc_status /= 0) stop "Not enough memory"
 
   prec = 1e-4
   error = 1e10
@@ -70,7 +71,7 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
           print * , 'it =', i, 't = ', i * d_t, 'err = ', error
           allocate ( sol_space(n_x, n_y) )
           call gather_solution( sol_space, n_x, n_y, u_in, ndims, comm2D, is_master )
-          solution(:, :, i / snapshot_size) = sol_space
+          solution(1:n_x, 1:n_y, i / snapshot_size) = sol_space(1:n_x, 1:n_y)
           deallocate( sol_space )
       end if
 

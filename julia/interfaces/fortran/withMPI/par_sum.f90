@@ -19,7 +19,6 @@ program par_sum
    ! computing slices
    slice = compute_slice(n, nb_procs, rank)
    sum_loc = sum(x(slice(1):slice(2)))
-   print *, "je suis ", rank, " slice = ", slice(1),",", slice(2), " sum_loc = ", sum_loc
 
    call MPI_reduce(sum_loc, sum_tot, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, code)
    if (rank == 0) print * , sum_tot
