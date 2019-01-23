@@ -2,9 +2,6 @@ cmake_minimum_required (VERSION 3.0)
 project (HeatModernFortran)
 enable_language(Fortran)
 
-# Define the test suite.
-enable_testing()
-
 # Check whether MPI support is available.
 find_package(MPI)
 if (MPI_FOUND)
@@ -12,6 +9,13 @@ if (MPI_FOUND)
   include_directories(${MPI_INCLUDE_PATH})
   add_library(heat SHARED heat_solve.f90 communications.f90 heat.f90)
   target_link_libraries(heat ${MPI_Fortran_LIBRARIES})
+  install(TARGETS heat DESTINATION ${CMAKE_SOURCE_DIR})
+  # par_sum example
+  add_executable(par_sum par_sum.f90)
+  add_definitions("-Wall -fbounds-check -Wextra")
+  target_link_libraries(par_sum ${MPI_Fortran_LIBRARIES})
+  #target_compile_options(par_sum -fcheck-bounds)
+  install(TARGETS par_sum DESTINATION ${CMAKE_SOURCE_DIR})
 else(MPI_FOUND)
     message(FATAL_ERROR "MPI not found; you NEED it to compile the project")
 endif(MPI_FOUND)
