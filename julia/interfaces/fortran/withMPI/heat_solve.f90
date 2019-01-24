@@ -1,5 +1,6 @@
 module heat_solve
     public :: solve
+    private :: set_bounds
 contains
 
 subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, solution) bind( C, name="solve" )
@@ -12,7 +13,7 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
   real(c_double), intent(inout) :: solution(1:n_x, 1:n_y, 1:snapshot_size)
 
   integer(c_int32_t) :: i, size_x, size_y, ierr
-  integer(c_int32_t) :: rank_w, size_w, rank_2D, comm2D, type_row, alloc_status
+  integer(c_int32_t) :: rank_w, size_w, rank_2D, comm2D, type_row
   integer(c_int32_t), parameter :: ndims = 2, N = 1, S = 2, E = 3, W = 4
   logical :: is_master, reorder = .true.
   integer(c_int32_t), dimension(4) :: neighbour
@@ -54,24 +55,25 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
   call MPI_CART_SHIFT(COMM2D, 0, 1, neighbour( N ), neighbour( S ), ierr )
   call MPI_CART_SHIFT(COMM2D, 1, 1, neighbour( W ), neighbour( E ), ierr )
 
-  allocate( u_in(size_x, size_y), stat=alloc_status )
-  if (alloc_status /= 0) stop "Not enough memory"
-  allocate( u_out(size_x, size_y), stat=alloc_status )
-  if (alloc_status /= 0) stop "Not enough memory"
+  allocate( u_in(size_x, size_y) ) ! not class : we do not look at alloc status
+  allocate( u_out(size_x, size_y) )
 
   prec = 1e-4
   error = 1e10
-  do i=0, iter_max
+  call set_bounds( coords, p_x, p_y, u_in)
+  call set_bounds( coords, p_x, p_y, u_out)
+
+  do i=1, iter_max
 
       call stencil_4( h_x, h_y, d_t, u_in, u_out, error_loc )
       call MPI_ALLREDUCE( error_loc, error, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
       error = sqrt( error )
 
-      if (is_master .and. mod( i, snapshot_step ) == 0)  then
-          print * , 'it =', i, 't = ', i * d_t, 'err = ', error
+      if (mod( i, snapshot_step ) == 0)  then
+          if (is_master) print * , 'it =', i, 't = ', i * d_t, 'err = ', error
           allocate ( sol_space(n_x, n_y) )
           call gather_solution( sol_space, n_x, n_y, u_in, ndims, comm2D, is_master )
-          solution(1:n_x, 1:n_y, i / snapshot_size) = sol_space(1:n_x, 1:n_y)
+          if (is_master) solution(1:n_x, 1:n_y, i / snapshot_size) = sol_space(1:n_x, 1:n_y)
           deallocate( sol_space )
       end if
 
@@ -88,5 +90,20 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
   call MPI_TYPE_FREE( type_row, ierr )
 
   end subroutine solve
+
+  subroutine set_bounds(coo, p_x, p_y, u)
+
+        implicit none
+        integer, intent(in) :: p_x, p_y
+        integer, dimension(2), intent(in) :: coo
+        real(kind=8), dimension(:, :), intent(out) :: u
+        u = 0.d0
+        if (coo(1) == 0)          u(1,      :) = 1.d0
+        if (coo(1) == (p_x - 1)) u(size( u, 1 ), :) = 1.d0
+
+        if (coo(2) == 0)          u(:,      1) = 1.d0
+        if (coo(2) == (p_y - 1)) u(:, size( u, 2 ) ) = 1.d0
+
+    end subroutine set_bounds
 
 end module heat_solve

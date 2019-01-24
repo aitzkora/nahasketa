@@ -59,15 +59,15 @@ function main()
     end
 
     snapshotStep = 10
-    snapshotSize = iterMax ÷ snapshotStep
+    snapshotSize = max(iterMax ÷ snapshotStep, 1)
     solution = zeros(nX, nY, snapshotSize)
-    setBounds(to2D((pX, pY), commRank), pX, pY, solution[:,:, 1])
 
-    for time=1:iterMax
-        ccall((:solve, "./libheat.so"), Cvoid,
-        (Ref{Int32}, Ref{Int32}, Ref{Int32}, Ref{Int32},  Ref{Int32},  Ref{Int32}, Ref{Int32}, Ptr{Float64}),
-         nX, nY, pX, pY, snapshotStep, snapshotSize,  iterMax, solution
-        )
+    ccall((:solve, "./libheat_solve.so"), Cvoid,
+    (Ref{Int32}, Ref{Int32}, Ref{Int32}, Ref{Int32},  Ref{Int32},  Ref{Int32}, Ref{Int32}, Ptr{Float64}),
+     nX, nY, pX, pY, snapshotStep, snapshotSize,  iterMax, solution
+    )
+    if (commRank ==  0)
+        println("solution = ", solution[:, : , snapshotSize])
     end
     MPI.Finalize()
 end

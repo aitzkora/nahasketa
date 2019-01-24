@@ -16,7 +16,7 @@ subroutine stencil_4(hx, hy, dt, u_in, u_out, error)
 
     w_x =  dt / (hx * hx)
     w_y =  dt / (hy * hy)
-    d = 1.d0 - 2.d0 * w_x - 2.d0 * w_y 
+    d = 1.d0 - 2.d0 * w_x - 2.d0 * w_y
     error = 0.d0
     do j = 2, size( u_in, 2) - 1
         do i=2, size( u_in, 1)  - 1
