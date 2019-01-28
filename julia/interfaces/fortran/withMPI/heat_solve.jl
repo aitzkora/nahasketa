@@ -11,38 +11,11 @@ function usage()
   println("    py       Y process number")
   exit(code=1)
 end
-
-"""
-to2D(dims::Tuple{Int32, Int32}, rank::Int32)
-
-convert a 1D rank to a 2D rank wrt a cartesian grids 
-"""
-
-function to2D(dims::Tuple{Int32, Int32}, rank)
-    return (Int32(rank % dims[1]), Int32(rank % dims[2]))
-end
-
-function setBounds(coo::Tuple{Int32,Int32} , pX::Int32, pY::Int32, u::Array{Float64,2})
-    if (coo[1] == 0)
-        u[1,   :] .= 1.
-    end
-    if coo[1] == (pX - 1)
-        u[end, :] .= 1.
-    end
-    if coo[2] == 0
-        u[:,   1] .= 1.
-    end
-    if coo[2] == (pY - 1)
-        u[:, end] .= 1.
-    end
-end
-
 function main()
     MPI.Init()
     comm = MPI.COMM_WORLD
     commSize = MPI.Comm_size(comm)
     commRank = MPI.Comm_rank(comm)
-    MPI.Barrier(comm)
     nArg = size(ARGS, 1)
     if (nArg < 5)
         usage()
@@ -60,14 +33,16 @@ function main()
 
     snapshotStep = 10
     snapshotSize = max(iterMax ÷ snapshotStep, 1)
+    iter = iterMax
     solution = zeros(nX, nY, snapshotSize)
 
     ccall((:solve, "./libheat_solve.so"), Cvoid,
     (Ref{Int32}, Ref{Int32}, Ref{Int32}, Ref{Int32},  Ref{Int32},  Ref{Int32}, Ref{Int32}, Ptr{Float64}),
-     nX, nY, pX, pY, snapshotStep, snapshotSize,  iterMax, solution
+     nX, nY, pX, pY, snapshotStep, snapshotSize,  iter, solution
     )
-    if (commRank ==  0)
-        println("solution = ", solution[:, : , snapshotSize])
+    if (commRank == 0)
+        indexToDisplay = (iter == iterMax ? snapshotSize : (iter ÷ snapshotStep))
+        show(stdout, "text/plain", solution[:, : , indexToDisplay]);
     end
     MPI.Finalize()
 end
