@@ -73,7 +73,7 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
           if (is_master) print * , 'it =', i, 't = ', i * d_t, 'err = ', error
           allocate ( sol_space(n_x, n_y) )
           call gather_solution( sol_space, n_x, n_y, u_in, ndims, comm2D, is_master )
-          if (is_master) solution(1:n_x, 1:n_y, i / snapshot_size) = sol_space(1:n_x, 1:n_y)
+          if (is_master) solution(:, :, i / snapshot_step) = sol_space(:, :)
           deallocate( sol_space )
       end if
 
