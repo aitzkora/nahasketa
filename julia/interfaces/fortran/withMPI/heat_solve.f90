@@ -9,7 +9,10 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
   use heat
   use mpi
   implicit none
-  integer(c_int32_t) :: n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max
+  integer(c_int32_t), intent(in) :: n_x, n_y ! sizes of the global matrix
+  integer(c_int32_t), intent(in) :: p_x, p_y ! nb of processes (in each dimensions)
+  integer(c_int32_t), intent(in) :: snapshot_step, snapshot_size
+  integer(c_int32_t), intent(inout) ::  iter_max ! max number of iterations
   real(c_double), intent(inout) :: solution(1:n_x, 1:n_y, 1:snapshot_size)
 
   integer(c_int32_t) :: i, size_x, size_y, ierr
@@ -82,6 +85,7 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
       if (error <= prec) exit
   end do
 
+  if (i < iter_max ) iter_max = i ! to know if we do all loops
   ! We gather the solution on process 0
 
   deallocate( u_in )

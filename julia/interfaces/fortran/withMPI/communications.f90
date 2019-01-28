@@ -55,11 +55,7 @@ contains
 
         cell_x = size( u, 1 ) - 2
         cell_y = size( u, 2 ) - 2
-        !if  (is_master) then
-        !    if (allocated(sol) != 9
-        !end if
         allocate( vec_temp(n_x * n_y) ) !FIXME : apparently to do gather, must be allocated on every procs
-
 
         allocate( u_vec(cell_x * cell_y) )
 
@@ -71,8 +67,8 @@ contains
             sol  = reshape( vec_temp, [n_x, n_y] )
             call MPI_COMM_SIZE(MPI_COMM_WORLD, size_w, ierr)
             do rank = 1, size_w
-            call MPI_CART_COORDS( comm2D, rank - 1, ndims, coo, ierr )
-            sol(coo(1) * cell_x + 1:(coo(1)+1) * cell_x, coo(2) * cell_y + 1:(coo(2)+1) * cell_y) = &
+                call MPI_CART_COORDS( comm2D, rank - 1, ndims, coo, ierr )
+                sol(coo(1) * cell_x + 1:(coo(1)+1) * cell_x, coo(2) * cell_y + 1:(coo(2)+1) * cell_y) = &
                 reshape( vec_temp(cell_x * cell_y * (rank - 1) + 1: cell_x * cell_y * rank), [cell_x, cell_y] )
             end do
         end if

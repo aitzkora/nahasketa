@@ -3,12 +3,12 @@ program heat_main
     use mpi
     use iso_c_binding, only: c_int32_t, c_double
     implicit none
-    integer(c_int32_t) :: n_x, n_y, p_x, p_y, iter_max, ierr
+    integer(c_int32_t) :: n_x, n_y, p_x, p_y, iter_max, iter, ierr
     integer :: rank_w, size_w, narg
     logical :: verbose
     integer :: snapshot_size, snapshot_step
     real(kind=c_double), allocatable :: solution(:,:,:)
-    character(len=10)::param
+    character(len=32)::param, variable_format
 
 
     call MPI_INIT(ierr)
@@ -48,8 +48,18 @@ program heat_main
     snapshot_size = max(iter_max / snapshot_step, 1)
     allocate(solution(n_x, n_y, snapshot_size))
 
-    call solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, solution)
+    iter = iter_max
+    call solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter, solution)
 
+    if (verbose) then
+        write (variable_format, '(ai0ai0a)') "(", n_x , "(", n_y , "e10.3/))"
+        if (iter == iter_max) then
+            print variable_format , solution(:, :, snapshot_size)
+        else
+            print variable_format , solution(:, :, iter / snapshot_step)
+        end if
+    end if
+    deallocate(solution)
     call MPI_FINALIZE( ierr )
 
 contains
