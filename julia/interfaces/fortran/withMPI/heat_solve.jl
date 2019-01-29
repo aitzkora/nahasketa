@@ -12,6 +12,9 @@ function usage()
   println("    snapshot_step we save solution every snapshot_step")
     exit(code=1)
 end
+
+include("plot_heat.jl")
+
 function main()
     MPI.Init()
     comm = MPI.COMM_WORLD
@@ -45,6 +48,7 @@ function main()
         indexToDisplay = (iter == iterMax ? snapshotSize : (iter < snapshotSize ? iter ÷ snapshotStep : 1))
         println("iter = $iter, indexToDisplay = $indexToDisplay")
         show(IOContext(stdout, :limit=>true), "text/plain", solution[:, : , indexToDisplay]);
+        #heatPlot(solution[:,:,1:indexToDisplay])
     end
     MPI.Finalize()
 end

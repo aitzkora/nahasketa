@@ -62,7 +62,7 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
   allocate( u_in(size_x, size_y) ) ! not class : we do not look at alloc status
   allocate( u_out(size_x, size_y) )
 
-  prec = 1e-4
+  prec = 1e-6
   error = 1e10
   call set_bounds( coords, p_x, p_y, u_in)
   call set_bounds( coords, p_x, p_y, u_out)
