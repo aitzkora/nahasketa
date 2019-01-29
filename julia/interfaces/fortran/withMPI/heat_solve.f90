@@ -5,6 +5,7 @@ contains
 
 subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, solution) bind( C, name="solve" )
   use iso_c_binding, only: c_int32_t, c_double
+  use iso_fortran_env, only: error_unit
   use communications
   use heat
   use mpi
@@ -85,7 +86,11 @@ subroutine solve(n_x, n_y, p_x, p_y, snapshot_step, snapshot_size, iter_max, sol
       if (error <= prec) exit
   end do
 
-  if (i < iter_max ) iter_max = i ! to know if we do all loops
+  MAX_IT: if (i < iter_max ) then
+      iter_max = i ! to know if we do all loops
+  else
+      if (is_master) write(error_unit, '(ai0a)') "max number of iterations (", iter_max, ") reached"
+  end if MAX_IT
   ! We gather the solution on process 0
 
   deallocate( u_in )
