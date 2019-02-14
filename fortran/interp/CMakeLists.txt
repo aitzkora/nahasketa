@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.9)
+enable_language(Fortran)
+project(LinearInterpolation DESCRIPTION "a simple Linear Interpolation function")
+include_directories(${CMAKE_BINARY_DIR})
+add_executable(testLinear m_interp.f90 m_read_matrix.f90)
+install(TARGETS testLinear DESTINATION ${CMAKE_SOURCE_DIR})

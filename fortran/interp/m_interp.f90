@@ -1,57 +1,50 @@
 module m_interp
 
-  implicit none
+    use iso_fortran_env
+    implicit none
 
-  private
+    private
 
-  public :: linear
+    public :: linear
 
 contains
 
-  subroutine  linear(x0, dx, y, z0, dz, z, ierr)
-  real(kind=8), intent(in) :: x0, z0, dx, dz
-  real(kind=8), intent(in), dimension(:) :: y
-  real(kind=8), intent(out), dimension(:) :: z
-  integer, intent(out) :: ierr
+    subroutine  linear(x0, dx, y, z0, dz, z, ierr)
+        real(kind=8), intent(in) :: x0, z0, dx, dz
+        real(kind=8), intent(in), dimension(:) :: y
+        real(kind=8), intent(out), dimension(:) :: z
+        integer, intent(out) :: ierr
+        integer :: zn, xn
+        zn = size(z, 1)
+        xn = size(y, 1)
 
-
-
-
-  end subroutine linear
-
+        if ((z0 < x0) .or. ((z0 + zn * dz) > (x0 + xn * dx))) then
+             write(error_unit,*) "linear is a INTERPOLATING function not EXTRAPOLATING"
+             ierr = -1
+        end if
+    end subroutine linear
 end module m_interp
+
 program test_interp
-   implicit none
-   integer :: n_lines, ierr
-   real(kind=8), allocatable ::  y(:),  z(:), raw_matrix(:)
-   real(kind=8) :: x0, z0, dx, dz
-   n_lines = num_lines("input_check")
-   allocate( raw_matrix(2*n_lines) , y(n_lines), z(n_lines) )
-   open(unit=12, file="input_check")
-     read(12,*) raw_matrix
-   close(unit=12)
-   !print '(52(F9.5xF9.5/))', raw_matrix
-   y(:) = raw_matrix(2:2*n_lines:2)
-   !print '(52(F9.5/))', y
-   x0  = raw_matrix(1)
-   dx = raw_matrix(3) - raw_matrix(1)
-   z0 = y(1)
-   dz = y(2)-y(1)
+    use m_io_matrix
+    use m_interp
+    use iso_fortran_env
+    implicit none
+    real(kind=8), allocatable :: input(:, :), output(:,:), z(:)
+    real(kind=8) :: error
+    integer :: ierr
 
-   call linear(x0, dx, y, z0, dz, z,ierr)
+    call read_matrix("input_check", input )
+    call read_matrix("output_check", output)
 
-   print *, 
-contains 
-    function num_lines(filename) result(n)
-    character(len=*), intent(in) :: filename
-    integer :: n, io_unit
-    n = 0
-    open(unit = io_unit, file=filename)
-    do
-    read(io_unit,fmt=*,end=1)
-    n = n + 1
-    end do
-    1 continue
-    close(io_unit) 
-    end function num_lines
+    allocate( z(size( output, 1 )) )
+
+    call linear( input(1,1), input(2,1) - input(1,1), input(:, 1), &
+                 output(1,1), output(2,1) - output(1,1), output(:, 1), ierr )
+
+    error = sum(abs( z - output(2,:)))
+    if ( error  > 1e-4) then
+         write(error_unit,*) "error  = ", error
+    end if
+
 end program test_interp
