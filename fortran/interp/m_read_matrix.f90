@@ -33,6 +33,7 @@ contains
         implicit none
         character(len=*), intent(in) :: filename
         real(kind=8), allocatable, dimension(:,:), intent(in out) :: a
+        real(kind=8), allocatable :: raw_data(:)
         logical, optional, intent(in) :: verbose
         logical :: is_verbose
         integer :: m, n, io_unit = 12
@@ -46,10 +47,11 @@ contains
         if (is_verbose) then
            print '(ai0ai0a)', "Found a matrix ", m , " x ", n, " in the file " // trim(filename)
         end if
-        allocate( a(m, n) )
+        allocate( a(m, n), raw_data(m * n))
         open(unit=io_unit, file=filename)
-        read(io_unit,*) a
+        read(io_unit,*) raw_data
         close(unit=io_unit)
+        a = transpose(reshape(raw_data, [n,m]))
     end subroutine read_matrix
 
 end module m_io_matrix
