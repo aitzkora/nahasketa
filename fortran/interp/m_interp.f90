@@ -34,34 +34,37 @@ contains
 end module m_interp
 
 program test_interp
-    use m_io_matrix
     use m_interp
     use iso_fortran_env
     implicit none
-    real(kind=8), allocatable :: input(:, :), output(:,:), z(:)
-    real(kind=8) :: error, dx, dz, dy_max
-    integer :: ierr, x_n, z_n
+    real(kind=8), allocatable :: z(:), y(:), z_check(:)
+    real(kind=8) :: error, dx, dz, dy_max, z_0, x_0
+    integer :: ierr, x_n, z_n, i
 
-    call read_matrix( "input_check", input )
-    call read_matrix( "output_check", output )
+    x_n = 52
+    z_n = 5
 
-    x_n = size( input, 1 )
-    z_n = size( output, 1 )
+    allocate( z( z_n), z_check(z_n),  y(x_n) )
+    
+    x_0 = real(4.2, selected_real_kind(8)) ! interpolation data sin(x_i) on [4.2,4.71] with h = 1e-3
+    dx = real(10e-3, selected_real_kind(8)) !
+    y = sin([(x_0 + i * dx, i=0, x_n - 1)]) !
+    dy_max = maxval( abs( y(2:x_n) - y(1:x_n -1) ) ) ! max ordonnate error
 
-    dx = input(2,1) - input(1,1)
-    dz = output(2,1) - output(1,1)
-    dy_max = maxval( abs( input(2:x_n, 2) - input(1:x_n - 1, 2) ) )
+    dz = real(8e-2, selected_real_kind(8)) ! we interpolate 5 values from z_0 = 4.453 with step 8e-2
+    z_0 = real(4.353, selected_real_kind(8))
+    z_check = sin([(z_0 + i * dz, i= 0, z_n - 1 )] )
 
-    allocate( z(size( output, 1 )) )
+    call linear( x_0, dx, y, z_0, dz, z(:), ierr )
 
-    call linear( input(1,1), dx, input(:, 2), output(1,1), dz, z(:), ierr )
-
-    error = sum( abs( z - output(:, 3) ) )
+    error = sum( abs( z - z_check ) )
     if ( error  > z_n * dy_max ) then
-         write(error_unit,*) achar(27)//'[31m Failed :  '//achar(27)//'[0m' , error, " is not less than " , z_n * dy_max
+         write(error_unit, *) achar(27)//'[31m Failed :  '//achar(27)//'[0m' , error, " > " , z_n * dy_max
          stop -1
     else
-         write(output_unit,*) achar(27)//'[92m OK '//achar(27)//'[0m', error , " is less than ", z_n * dy_max
+         write(output_unit,*) achar(27)//'[92m OK '//achar(27)//'[0m', error , " ≤ ", z_n * dy_max
     end if
+
+    deallocate( z, z_check, y)
 
 end program test_interp
