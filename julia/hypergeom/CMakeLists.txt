@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.9)
+enable_language(Fortran)
+project(whittaker DESCRIPTION "try to use gsl for computer whittakerW function")
+add_executable(test_whittaker test_whittaker.f90)
+target_link_libraries(test_whittaker gsl)
