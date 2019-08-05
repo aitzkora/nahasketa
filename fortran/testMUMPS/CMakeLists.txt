@@ -20,7 +20,7 @@ endif()
 
 if ( (NOT MUMPS_INCLUDE_PATH  ) OR 
      (NOT MUMPS_LIB_DIR ) OR 
-     (NOT SCOTCH_INCLUDE_PATH  ) OR 
+     (NOT METIS_LIB_DIR ) OR 
      (NOT SCOTCH_LIB_DIR ) OR 
      (NOT SCALAPACK_LIB_DIR ) OR 
      (NOT BLAS_LIB_DIR ) OR 
@@ -29,19 +29,17 @@ if ( (NOT MUMPS_INCLUDE_PATH  ) OR
      - MUMPS_INCLUDE_PATH
      - MUMPS_LIB_DIR
      - METIS_LIB_DIR
-     - SCOTCH_INCLUDE_PATH
      - SCOTCH_LIB_DIR
      - SCALAPACK_LIB_DIR
      - BLAS_LIB_DIR
      - LAPACK_LIB_DIR
-     Please copy config/preload.cmake and modify for suiting to your config")
+     please edit preload_skel.cmake to correctly defines those variables and run cmake -C preload_skel.cmake ")
 else()
      message(STATUS " predefined variables
   --------------------
   - MUMPS_INCLUDE_PATH =  ${MUMPS_INCLUDE_PATH}
   - MUMPS_LIB_DIR = ${MUMPS_LIB_DIR}
   - METIS_LIB_DIR = ${METIS_DIR}
-  - SCOTCH_INCLUDE_PATH = ${SCOTCH_INCLUDE_PATH}
   - SCOTCH_LIB_DIR = ${SCOTCH_LIB_DIR}
   - SCALAPACK_LIB_DIR = ${SCALAPACK_LIB_DIR}
   - BLAS_LIB_DIR = ${BLAS_LIB_DIR}
@@ -72,8 +70,8 @@ message(STATUS "SCOTCH_LIB = ${SCOTCH_LIBRARIES}")
 
 #find_library(PTHREAD_LIB NAMES  pthread HINTS ${PTHREAD_LIB_DIR})
 #message(STATUS "PTHREAD_LIB = ${PTHREAD_LIB}")
- # FIXME : check for existing header in that directory
-include_directories(${SCOTCH_INCLUDE_PATH}) 
+# FIXME : check for existing header in that directory
+#include_directories(${SCOTCH_INCLUDE_PATH}) 
 
 # SCALAPACK config
 find_library(SCALAPACK_LIB NAMES scalapack scalapack-openmpi HINTS ${SCALAPACK_LIB_DIR})
@@ -107,3 +105,6 @@ endif(OpenMP_Fortran_FOUND)
 
 add_executable (simple_test zsimpletest.F90)
 target_link_libraries (simple_test  ${MUMPS_LIB} ${MUMPS_COMMON_LIBRARY} ${MUMPS_PORD_LIBRARY} ${METIS_LIB} ${SCOTCH_LIBRARIES} ${SCALAPACK_LIB} ${LAPACK_LIB} ${BLAS_LIB} ${MPI_Fortran_LIBRARIES} ${OpenMP_Fortran_LIBRARIES}) 
+enable_testing()
+file(COPY ${CMAKE_SOURCE_DIR}/input_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_test(NAME simple_test COMMAND sh -c "${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4  $<TARGET_FILE:simple_test> < ${CMAKE_SOURCE_DIR}/input_data")
