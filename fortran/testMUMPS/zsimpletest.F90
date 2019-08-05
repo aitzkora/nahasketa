@@ -13,9 +13,8 @@ program simple_test
     mumps_par % par = 1
     call zmumps(mumps_par)
     if (mumps_par % infog(1) < 0) then
-        write(6,'(a,a,i6,a,i9)') " error return: ",
-        &            "  mumps_par % infog(1)= ", mumps_par % infog(1), 
-        &            "  mumps_par % infog(2)= ", mumps_par % infog(2) 
+        write(6,'(a,a,i6,a,i9)') " error return: ", "  mumps_par % infog(1)= ", mumps_par % infog(1), & 
+                                                    "  mumps_par % infog(2)= ", mumps_par % infog(2) 
         call MPI_FINALIZE(ierr)
         stop -1
     end if
@@ -36,9 +35,8 @@ program simple_test
     mumps_par % job = 6
     call zmumps(mumps_par)
     if (mumps_par%infog(1) < 0) then
-        write(6,'(a,a,i6,a,i9)') " error return: ",
-        &            "  mumps_par % infog(1)= ", mumps_par % infog(1), 
-        &            "  mumps_par % infog(2)= ", mumps_par % infog(2) 
+        write(6,'(a,a,i6,a,i9)') " error return: ", "  mumps_par % infog(1)= ", mumps_par % infog(1), &
+                                                    "  mumps_par % infog(2)= ", mumps_par % infog(2) 
         call MPI_FINALIZE(ierr)
         stop -1
     end if
@@ -54,9 +52,8 @@ program simple_test
     mumps_par % job = -2
     call zmumps(mumps_par)
     if (mumps_par % infog(1) < 0) then
-        write(6,'(a,a,i6,a,i9)') " error return: ",
-        &            "  mumps_par % infog(1)= ", mumps_par % infog(1), 
-        &            "  mumps_par % infog(2)= ", mumps_par % infog(2) 
+        write(6,'(a,a,i6,a,i9)') " error return: ", "  mumps_par % infog(1)= ", mumps_par % infog(1), & 
+                                                    "  mumps_par % infog(2)= ", mumps_par % infog(2) 
         call MPI_FINALIZE(ierr)
         stop -1
     end if

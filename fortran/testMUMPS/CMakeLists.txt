@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.15)
 project (test_MUMPS)
 enable_language (Fortran)
 
@@ -28,6 +28,7 @@ if ( (NOT MUMPS_INCLUDE_PATH  ) OR
      message(FATAL_ERROR "these variables MUST be defined :
      - MUMPS_INCLUDE_PATH
      - MUMPS_LIB_DIR
+     - METIS_LIB_DIR
      - SCOTCH_INCLUDE_PATH
      - SCOTCH_LIB_DIR
      - SCALAPACK_LIB_DIR
@@ -39,6 +40,7 @@ else()
   --------------------
   - MUMPS_INCLUDE_PATH =  ${MUMPS_INCLUDE_PATH}
   - MUMPS_LIB_DIR = ${MUMPS_LIB_DIR}
+  - METIS_LIB_DIR = ${METIS_DIR}
   - SCOTCH_INCLUDE_PATH = ${SCOTCH_INCLUDE_PATH}
   - SCOTCH_LIB_DIR = ${SCOTCH_LIB_DIR}
   - SCALAPACK_LIB_DIR = ${SCALAPACK_LIB_DIR}
@@ -57,9 +59,16 @@ message(STATUS "MUMPS_PORD_LIBRARY = ${MUMPS_PORD_LIBRARY}")
  # FIXME : check for existing header in that directory
 include_directories(${MUMPS_INCLUDE_PATH}) 
 
+# METIS
+find_library(METIS_LIB NAMES  metis HINTS ${METIS_LIB_DIR})
+message(STATUS "METIS_LIB = ${METIS_LIB}")
+
 # Scotch config
-find_library(SCOTCH_LIB NAMES  ptesmumps HINTS ${SCOTCH_LIB_DIR})
-message(STATUS "SCOTCH_LIB = ${SCOTCH_LIB}")
+find_library(ESMUMPS_LIB NAMES  ptesmumps HINTS ${SCOTCH_LIB_DIR})
+find_library(SCOTCH_LIB NAMES scotch HINTS ${SCOTCH_LIB_DIR})
+find_library(SCOTCHERR_LIB NAMES scotcherr HINTS ${SCOTCH_LIB_DIR})
+set(SCOTCH_LIBRARIES ${ESMUMPS_LIB} ${SCOTCH_LIB} ${SCOTCHERR_LIB})
+message(STATUS "SCOTCH_LIB = ${SCOTCH_LIBRARIES}")
 
 #find_library(PTHREAD_LIB NAMES  pthread HINTS ${PTHREAD_LIB_DIR})
 #message(STATUS "PTHREAD_LIB = ${PTHREAD_LIB}")
@@ -97,4 +106,4 @@ if (OpenMP_Fortran_FOUND) ## Beware : we have to deal with old versions of cmake
 endif(OpenMP_Fortran_FOUND)
 
 add_executable (simple_test zsimpletest.F90)
-target_link_libraries (simple_test  ${MUMPS_LIB} ${MUMPS_COMMON_LIBRARY} ${MUMPS_PORD_LIBRARY} ${SCOTCH_LIB} ${SCALAPACK_LIB} ${LAPACK_LIB} ${BLAS_LIB} ${MPI_Fortran_LIBRARIES} ${OpenMP_Fortran_LIBRARIES}) 
+target_link_libraries (simple_test  ${MUMPS_LIB} ${MUMPS_COMMON_LIBRARY} ${MUMPS_PORD_LIBRARY} ${METIS_LIB} ${SCOTCH_LIBRARIES} ${SCALAPACK_LIB} ${LAPACK_LIB} ${BLAS_LIB} ${MPI_Fortran_LIBRARIES} ${OpenMP_Fortran_LIBRARIES}) 
