@@ -2,7 +2,7 @@
 #include <math.h>
 #include <assert.h>
 
-extern void compute_U(const int m, const int n, const double z_x, const double z_y, double * res_x, double *res_y);
+extern void compute_U(const double m, const double n, const double z_x, const double z_y, double * res_x, double *res_y);
 
 int main()
 {

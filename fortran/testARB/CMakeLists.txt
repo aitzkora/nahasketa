@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
-#enable_language(Fortran)
+enable_language(C)
+enable_language(Fortran)
 project(testARB DESCRIPTION "try to use arb for computer whittakerW function")
 
 # ARB config
@@ -19,13 +20,17 @@ else()
     message(STATUS "FLINT_LIB = ${FLINT_LIB}")
 endif()
 
-
+# build the stub library which call ARB
 add_library(compute_u compute_u.c)
 target_include_directories(compute_u BEFORE PRIVATE ${ARB_INCLUDE_PATH})
 target_link_libraries(compute_u PRIVATE ${ARB_LIB} ${FLINT_LIB} m)
-
+# test C file
 add_executable(bidon test_bidon.c)
 target_link_libraries(bidon compute_u)
 
+add_executable(test_W test_whittakerW.f90)
+target_link_libraries(test_W compute_u)
+
 enable_testing()
 add_test(test1 bidon)
+add_test(test2 test_W)

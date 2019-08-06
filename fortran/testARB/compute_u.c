@@ -6,7 +6,7 @@
 
 #define PREC 64
 
-void compute_U(const int m, const int n, const double z_x, const double z_y, double * res_x, double *res_y)
+void compute_U(const double m, const double n, const double z_x, const double z_y, double * res_x, double *res_y)
 {
     slong prec = PREC;
 
@@ -31,8 +31,8 @@ void compute_U(const int m, const int n, const double z_x, const double z_y, dou
      * n_c <- n + i * 0
      */
     acb_set_d_d(z, z_x, z_y);
-    acb_set_d_d(m_c, (double) m, 0.);
-    acb_set_d_d(n_c, (double) n, 0.);
+    acb_set_d_d(m_c, m, 0.);
+    acb_set_d_d(n_c, n, 0.);
     
     /* computes the U(m, n, z) function */
     acb_hypgeom_u(res, m_c, n_c, z, prec);
