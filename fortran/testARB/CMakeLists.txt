@@ -22,6 +22,6 @@ endif()
 
 add_executable(bidon test_bidon.c)
 target_include_directories(bidon BEFORE PRIVATE ${ARB_INCLUDE_PATH})
-target_link_libraries(bidon ${ARB_LIB} ${FLINT_LIB})
+target_link_libraries(bidon ${ARB_LIB} ${FLINT_LIB} m)
 enable_testing()
 add_test(test1 bidon)
