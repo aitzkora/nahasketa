@@ -1,11 +1,11 @@
-<script type="text/javascript" async
+<script type="text/javascript" async 
 src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js? 
 config=TeX-MML-AM_CHTML"
 </script>
 testARB
 -------
 
- computes the whittaker_W function $exp(-z/2) z^{m+1/2} U(1/2+m -k, 1+2m, z)$ using arb
+ computes the whittaker_W function $$exp(-z/2) z^{m+1/2} U(1/2+m -k, 1+2m, z)$$ using arb
 
 Prerequisites:
 --------------
