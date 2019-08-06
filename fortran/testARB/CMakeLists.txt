@@ -20,8 +20,12 @@ else()
 endif()
 
 
+add_library(compute_u compute_u.c)
+target_include_directories(compute_u BEFORE PRIVATE ${ARB_INCLUDE_PATH})
+target_link_libraries(compute_u PRIVATE ${ARB_LIB} ${FLINT_LIB} m)
+
 add_executable(bidon test_bidon.c)
-target_include_directories(bidon BEFORE PRIVATE ${ARB_INCLUDE_PATH})
-target_link_libraries(bidon ${ARB_LIB} ${FLINT_LIB} m)
+target_link_libraries(bidon compute_u)
+
 enable_testing()
 add_test(test1 bidon)
