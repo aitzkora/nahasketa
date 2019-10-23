@@ -17,40 +17,36 @@ contains
         real(c_double), intent(out) :: f
         real(c_double), intent(out) :: df(n)
 
-        real(c_double), allocatable :: f_loc, df_loc(:)
+        real(c_double) ::  f_loc
+        real(c_double), allocatable:: df_loc(:)
         integer(c_int32_t) :: slice(2)
         integer(c_int32_t) :: code, nb_procs, rank, is, ie, loc_size
         integer(c_int32_t), allocatable :: sizes(:), displacements(:)
         
-        !call MPI_COMM_SIZE( MPI_COMM_WORLD, nb_procs, code)
-        !call MPI_COMM_RANK( MPI_COMM_WORLD, rank, code)
+        f = 0.d0
+        call MPI_COMM_SIZE( MPI_COMM_WORLD, nb_procs, code)
+        call MPI_COMM_RANK( MPI_COMM_WORLD, rank, code)
        
         !! computing slices
-        !slice = compute_slice(n, nb_procs, rank)
-        !is = slice(1)
-        !ie = slice(2)
-        !print *, is 
+        slice = compute_slice(n, nb_procs, rank)
+        is = slice(1)
+        ie = slice(2)
         ! computing objective
-        !f_loc = 0.5d0 * sum( (x(is:ie) - c(is:ie))**2 )
-        !call MPI_REDUCE( f_loc, f, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD, code )
-        !print *, f_loc
-        ! computing gradient and ...
-        !df_loc = x(ie:is) - c(ie:is)
+        f_loc = 0.5d0 * sum( (x(is:ie) - c(is:ie))**2 )
+        call MPI_REDUCE( f_loc, f, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD, code )
         
+        ! computing gradient and ...
+        df_loc = x(is:ie) - c(is:ie)
+ 
         ! communicate it
 
-        !loc_size = is - ie + 1
-        !if (rank == 0) then 
-        !    allocate( sizes(nb_procs) )
-        !end if
-        !call MPI_GATHER( sizes, 1, MPI_INT, loc_size, 1, MPI_INT, 0, MPI_COMM_WORLD, code)
+        loc_size = ie - is + 1
+        if (rank == 0) allocate( sizes(nb_procs) )
+        call MPI_GATHER( loc_size, 1, MPI_INT, sizes, 1, MPI_INT, 0, MPI_COMM_WORLD, code)
         
-        !if (rank == 0) then
-        !   displacements = [0, cumsum(sizes)]
-        !   print * , "disps = ", displacements 
-        !endif  
-        !call MPI_GATHERV( df_loc , sizes(rank + 1), MPI_DOUBLE, &
-        !                  df, sizes, displacements, MPI_DOUBLE, 0, MPI_COMM_WORLD, code)
+        if (rank == 0) displacements = cumsum(sizes)
+        call MPI_GATHERV( df_loc , loc_size, MPI_DOUBLE, &
+                          df, sizes, displacements, MPI_DOUBLE, 0, MPI_COMM_WORLD, code)
  
         
     end subroutine compute_error

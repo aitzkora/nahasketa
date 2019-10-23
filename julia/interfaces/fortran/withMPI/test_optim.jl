@@ -23,7 +23,7 @@ function main()
     x[:] = 1:n
     f,df = simu(x)
     if (rank == 0) 
-        println("fonction cout ", f)
+        println("cost function and gradient" , f, df)
     end
     MPI.Finalize()
 end
