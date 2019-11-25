@@ -49,7 +49,7 @@ function main()
         println("cost function at x0 = " , f)
     end
  
-    res = optimize(cost, grad, x_loc, BFGS(); inplace =false)
+    res = optimize(cost, grad, x_loc, LBFGS(); inplace =false)
     x_min = Optim.minimizer(res)
     #println("res = ", x_min)
     x_glob = MPI.Gatherv(x_min, Cint[5,5], 0, comm)
