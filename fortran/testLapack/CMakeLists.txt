@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.9)
+enable_language(Fortran)
+project(testDpotrf DESCRIPTION "test of linking dpotrf against MKL")
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/)
+
+## Additional cmake modules to use in this project
+if(USE_MKL)
+find_package(MKL)
+if (MKL_FOUND)
+set(LAPACK_LIBRARIES -Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_SEQUENTIAL_LAYER_LIBRARY} ${MKL_CORE_LIBRARY} -Wl,--end-group)
+endif(MKL_FOUND)
+endif(USE_MKL)
+
+if (NOT LAPACK_LIBRARIES)
+    find_package(LAPACK)
+    if (LAPACK_FOUND)
+        message(STATUS "found LAPACK : LAPACK_LIBRARIES = ${LAPACK_LIBRARIES}")
+    endif()
+else(NOT LAPACK_LIBRARIES)
+    message(WARNING "you set LAPACK_LIBRARIES to ${LAPACK_LIBRARIES}")
+endif(NOT LAPACK_LIBRARIES)
+add_executable(main main.F90)
+add_executable(openblas test_openblas.f90)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/inverse.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/matrix.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(main ${LAPACK_LIBRARIES})
+target_link_libraries(openblas ${LAPACK_LIBRARIES})
