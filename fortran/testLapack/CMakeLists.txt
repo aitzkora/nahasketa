@@ -27,3 +27,7 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/inverse.dat DESTINATION ${CMAKE_CURRENT_BI
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/matrix.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(main linalg ${LAPACK_LIBRARIES} )
 target_link_libraries(openblas linalg ${LAPACK_LIBRARIES})
+enable_testing()
+add_test(main main)
+add_test(openblas openblas)
+
