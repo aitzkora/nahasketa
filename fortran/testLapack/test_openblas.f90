@@ -1,14 +1,17 @@
-program test_open 
+program test_inverse
     use iso_c_binding 
+    use m_linalg
+    implicit none
     integer, parameter :: N = 84
-    real(c_double) :: m_inv(N,N), m(N,N), m_check(N,N), m_eye(N,N)
+    external :: dpotrf, dpotri
+    real(c_double) :: m_inv(N,N), m(N,N), m_eye(N,N), m_fact(N,N)
    
     m_eye = eye()
-    m = read_cst("inverse.dat")
-    m_inv = read_cst("matrix.dat")
-    m_check = matmul(m_inv,m)
-    !print '(4(4(1x1f9.7)/))', m_eye
-    print *, maxval(abs(m_check-m_eye))
+    !m_inv = read_cst("inverse.dat")
+    m = read_cst("matrix.dat")
+    m_fact = m
+    m_inv = compute_inv(m) 
+    print *, maxval(abs(matmul(m_inv,m)-m_eye))
 
 contains
      function read_cst(filename) result(mat)
@@ -29,4 +32,4 @@ contains
     
     end function
 
-end program  test_open
+end program  test_inverse
