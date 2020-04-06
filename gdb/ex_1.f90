@@ -1,11 +1,8 @@
 program ex_1
   implicit none
   integer :: i
-  integer, allocatable :: b(:)
-  ! integrate
-  b = [0, cumsum([(i,i=1,10)])]
-  ! and diff
-  print *, b(2:size(b,1))-b(1:size(b,1)-1)
+  print *, id([(i,i=1,5)])
+
 contains
 
   pure function cumsum(x) result(y)
@@ -16,7 +13,15 @@ contains
     do i =2, size(x, 1)
       y(i) = y(i-1) + x(i)
     end do
-
-
   end function cumsum
+
+  pure function id(x) result(z)
+    integer, intent(in) :: x(:)
+    integer, allocatable :: y(:)
+    integer :: z(x(size(x,1)))
+    y = [0, cumsum(x) ]
+    z = y(2:size(y,1))-x(1:size(y,1)-1)
+  end function
+
 end program ex_1
+
