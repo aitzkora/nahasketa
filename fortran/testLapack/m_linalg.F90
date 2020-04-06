@@ -6,11 +6,10 @@ contains
 
     subroutine pretty_print(a)
         real(kind=8), intent(in) :: a(:,:)
-        integer  :: m,n
+        integer  :: s(2)
         character(25) :: fmt
-        m = size(a, 1)
-        n = size(a, 2)
-        write (fmt, '(ai0ai0a)') '(', m, '(1x', n, 'f9.3/))' 
+        s = size( a )
+        write (fmt, '(ai0ai0a)') '(', s(1), '(1x', s(2), 'f9.3/))' 
         print fmt, a 
     end subroutine pretty_print
 

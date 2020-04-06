@@ -1,0 +1,437 @@
+#+TITLE: Introduction à GNU GDB
+#+AUTHOR: Marc Fuentes
+#+EMAIL: marc.fuentes@inria.fr
+#+DATE: 07 avril 2020
+#+STARTUP: content hidestars
+#+LINK: org info:org#%s
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="css/stylesheet.css"/>
+Salut à toi !  Bienvenue dans la bidouille !
+
+Ce fichier est disponible à http://sed.bordeaux.inria.fr/la-bidouille
+
+#+COLUMNS: %38ITEM %TODO %TAGS
+* Méthodes de déverminage
+- utiliser une instruction d'affichage : =printf= , =cout <<=, =print*,= → bricolage
+- simuler l'exécution du programme pas-à-pas avec un dévermineur → gdb, ddt,
+  etc...
+- utiliser les bonnes options du compilateur pour trouver des dépassements 
+  e.g. =-fsanitize==address= 
+  (https://github.com/google/sanitizers/wiki/AddressSanitizer) ou =-fcheck==bounds=
+- utiliser un simulateur automatique qui recherche les écritures et lectures
+  invalides, les fuites de mémoire, etc... → valgrind --tool=memcheck ou 
+* Présentation de GDB
+** points d'arrêt
+*** Compilez le programme suivante =gfortran -g ex_1.f90=
+#+begin_src fortran
+program ex_1
+  implicit none
+  integer :: i
+  integer, allocatable :: b(:)
+  ! integrate
+  b = [0, cumsum([(i,i=1,10)])]
+  ! and diff
+  print *, b(2:size(b,1))-b(1:size(b,1)-1)
+contains
+
+  pure function cumsum(x) result(y)
+    integer, intent(in) :: x(:)
+    integer :: y(size(x,1))
+    integer :: i
+    y(1) = x(1)
+    do i =2, size(x, 1)
+      y(i) = y(i-1) + x(i)
+    end do
+
+
+  end function cumsum
+end program ex_1
+#+end_src
+et passez-le en arguments à GDB : =gdb ./a.out=
+*** 
+*** voir les sources
+#+begin_src gdb
+(gdb) l cumsum
+#+end_src
+_Notes_: 
+ - on peut aussi utiliser une plage numeros de lignes e.g. =l 28,38=
+ - pour separer les sources , on peut utiliser une fenêtre pour les sources
+#+begin_src gdb
+(gdb) wh src + 10
+#+end_src
+*** mettre un point d'arrêt (sur un ligne)
+#+begin_src gdb
+(gdb) b 21
+#+end_src
+_Note_ : si il y a plusieurs fichiers la syntaxe est =b nomFichier:numeroDeLigne=
+*** ou sur une fonction
+#+begin_src gdb
+(gdb) b cumsum
+#+end_src
+_Note_ : En commençant le nom de fonction par ' et en utilisant tab on peut
+completer le nom des fonctions
+*** obtenir les info sur les points d'arrêt
+#+begin_src gdb
+(gdb) info b
+Num     Type           Disp Enb Address            What
+1       breakpoint     keep y   0x0000000000400c36 in main() at ex1.cpp:21
+2       breakpoint     keep y   0x0000000000400b01 in sum(int, int const*) at ex1.cpp:8
+#+end_src
+*** lancer l'exécution et stopper sur un point d'arrêt
+#+begin_src gdb
+(gdb) run
+Starting program: /home/fux/sources/sed-bso/web/org/a.out
+
+, main () at ex1.cpp:21
+21        int N = 10;
+#+end_src
+*** point d'arrêt conditionnel
+On peut utiliser un point d'arrêt en ajoutant une condition. On peut souhaiter
+s'arrêter à une iteration précise dans une boucle. La syntaxe conditionelle 
+est la suivante =b ligne if condition=. Par exemple, si l'on veut stopper dans la fonction 
+=cumSums= à l'iteration où =i= vaut 3
+ - on va a ligne 16 dans la fonction
+#+begin_src gdb
+(gdb) disable 2
+(gdb) tb 16
+(gdb) c
+Continuing.
+#+end_src
+ - et l'on pose un point d'arrêt conditionel
+#+begin_src gdb
+(gdb) b 17 if i==3
+Breakpoint 4 at 0x400bc0: file ex1.cpp, line 17.
+(gdb) c
+Continuing.
+Breakpoint 4, cumSums (x=std::vector of length 10, capacity 10 = {...}, res=std::vector of length 10, capacity 10 = {...})
+    at ex1.cpp:17
+(gdb) p i
+$1 = 3
+#+end_src
+ - on nettoie et on redémarre
+#+begin_src gdb
+(gdb) delete 4
+(gdb) enable 2
+(gdb) run
+#+end_src
+** Exécution pas à pas
+Pour simuler l'exécution du programme dans GDB, nous disposons de diverses
+commandes pour se déplacer dans le code
+*** passer à l'instruction suivante
+#+begin_src gdb
+(gdb) n
+22        vector<int> x(N, 0), res;
+#+end_src
+_Note_: l'instruction =step= (raccourci s), permet quant à elle de tracer
+l'intérieur d'une fonction qui serait sur la ligne courante
+*** continuer jusqu'au prochain point d'arrêt
+#+begin_src gdb
+(gdb) c
+Continuing.
+
+Breakpoint 2, sum (size=1, x=0x616c20) at ex1.cpp:8
+8         int sum = 0;
+#+end_src
+*** continuer jusqu'à une ligne
+#+begin_src gdb
+(gdb) u 11
+sum (size=2, x=0x616c20) at ex1.cpp:11
+11        return sum;
+#+end_src
+*** aller à la fin d'une fonction
+#+begin_src gdb
+(gdb) fin
+Run till exit from #0  sum (size=1, x=0x616c20) at ex1.cpp:11
+0x0000000000400bfa in cumSums (x=std::vector of length 10, capacity 10 =
+{...}, res=std::vector of length 10, capacity 10 = {...}) at ex1.cpp:17
+17  res[i++] = sum(i, x.data());
+Value returned is $2 = 0
+#+end_src
+** examiner la pile d'appel
+on peut examiner la pile d'appel avec la commande =backtrace= (raccourci bt)
+#+begin_src gdb
+(gdb) c
+Continuing.
+Breakpoint 2, sum (size=2, x=0x616c20) at ex1.cpp:8
+8         int sum = 0;
+(gdb) bt
+#0  sum (size=2, x=0x616c20) at ex1.cpp:8
+#1  0x0000000000400bfa in cumSums (x=std::vector of length 10, capacity 10 = 
+{...}, res=std::vector of length 10, capacity 10 = {...})
+    at ex1.cpp:17
+#2  0x0000000000400cc5 in main () at ex1.cpp:24
+#+end_src
+où =#0=, =#1=, =#2= correspondent aux appels de fonctions. \\
+_Note_: On peut utiliser =bt full= pour avoir les arguments en même temps
+*** on peut lister les arguments
+#+begin_src gdb
+(gdb) info args
+size = 2
+x = 0x616c20
+#+end_src
+*** ou les variables locales
+#+begin_src gdb
+(gdb) info locals
+sum = 32767
+#+end_src
+*** et se déplacer dans la pile d'appel (=up= and =down=)
+#+begin_src gdb
+(gdb) up
+#1  0x0000000000400bfa in cumSums (x=std::vector of length 10, capacity 10 = 
+{...}, res=std::vector of length 10, capacity 10 = {...})
+    at ex1.cpp:17
+17              res[i++] = sum(i, x.data());
+(gdb) info args
+x = std::vector of length 10, capacity 10 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+res = std::vector of length 10, capacity 10 = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0} 
+#+end_src
+** examiner les variables et la mémoire
+Afin de comprendre les dysfonctionnements du programme, il est nécessaire
+de pouvoir connaître des différentes valeurs des variables du programme.
+*** affichage ponctuel
+#+begin_src gdb
+(gdb) down
+#0  sum (size=2, x=0x616c20) at ex1.cpp:8
+8         int sum = 0;
+(gdb) p x
+$4 = (const int *) 0x616c20
+#+end_src
+*** affichage réccurent (tant que la variable est dans la portée)
+#+begin_src gdb
+(gdb) display x
+1: x = (const int *) 0x616c20
+(gdb) n
+9         for(int  i = 0; i < size; ++i)
+1: x = (const int *) 0x616c20
+(gdb) undisplay 1
+#+end_src
+*** données contiguës
+#+begin_src gdb
+(gdb) p x[0]@10
+$5 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+#+end_src
+_Note_: on peut aussi utiliser la syntaxe =p *x@10=
+*** affichage de la mémoire
+On peut aussi afficher directement le contenu de la mémoire avec une
+instruction =x /FMT addresse= où format contient un nombre de répétitions
+et une lettre de format (d
+#+begin_src gdb
+(gdb) x /10d 0x616c20
+0x616c20:       0       1       2       3
+0x616c30:       4       5       6       7
+0x616c40:       8       9
+#+end_src
+ou une lettre de taille (b,h,w,g)
+#+begin_src gdb
+(gdb) x /8h 0x616c20
+0x616c20:       0       0       1       0       2       0       3       0
+#+end_src
+*** 
+** points de surveillance
+On peut stopper un programme selon le fait qu'une variable ou qu'un
+emplacement mémoire change de valeur, on utilise des points de surveillance
+«watchpoint». On peut poser plusieurs types de points de surveillance
+| type     | commande |
+|----------+----------|
+| lecture  | rwatch   |
+| écriture | awatch   |
+| général  | watch    |
+*** exemple avec watch,
+On va chercher quand la $6^{ème}$ valeur de =res=  change de valeur :
+ - on remonte la pile d'appel dans  =cumSums=
+#+begin_src gdb
+(gdb) up
+#+end_src
+ - on affiche la valeur du pointeur du tableau
+#+begin_src gdb
+(gdb) p res._M_impl._M_start
+$8 = (std::_Vector_base<int, std::allocator<int> >::pointer) 0x616c50
+#+end_src
+ - on pose un point de surveillance sur le $6^{ème}$ élément
+#+begin_src gdb
+(gdb) watch *((int *)(0x616c50) + 5)
+Hardware watchpoint 7: *((int *)(0x616c50) + 5)
+#+end_src
+ - on désactive le deuxième point d'arrêt et on rédemarre
+#+begin_src gdb
+(gdb) dis 2
+(gdb) c
+Continuing.
+Hardware access (read/write) watchpoint 6: *((int *)(0x616c50) + 5 )
+Old value = 0
+New value = 15
+cumSums (x=std::vector of length 10, capacity 10 = {...}, res=std::vector of length 10, capacity 10 = {...})
+at ex1.cpp:16
+16        for (auto & z : x)
+#+end_src
+* Bonus
+** scripts
+On peut «donner à manger» des scripts de commande à gdb sous la forme
+#+begin_src sh
+gdb -x ./monScript
+#+end_src
+Pour les commandes de base que l'on veut charger à chaque fois, on peut par 
+exemple les placer dans =~/.gdbinit=. Par exemple pour éviter de demander confirmation on peut écrire
+#+begin_src gdb
+set confirm off
+#+end_src
+*** une application de ce principe concerne le déverminage parallèle d'un programme MPI
+**** Soit le programme C suivant 
+#+begin_src C :res pp
+#include <mpi.h>
+#include <stdio.h>
+int main(int argc, char* argv[]) {
+    int world_rank;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    printf("%d-tik egun on!\n", world_rank);
+    MPI_Finalize();
+    return 0;
+}
+#+end_src
+*** et le script suivant
+#+begin_src gdb
+file ./a.out
+b 7
+run
+#+end_src
+**** on peut lancer plusieurs terminaux qui exécutent chacun en parallèle le script gdb
+#+begin_src sh
+mpirun -np 4 xterm -e gdb -x gdb_src
+#+end_src
+**** ou mieux, si l'implementation de MPI est openmpi, on pourra utiliser le
+multiplexeur de terminal avec le projet [[https://github.com/Azrael3000/tmpi][tmpi]]
+#+begin_src sh
+tmpi 2 gdb -x gdb_scr
+#+end_src
+** affichage personnalisé  («pretty-printing»)
+Certains objets ou structures peuvent présenter une certaine complexité et leur
+affichage standard par gdb peut être pénibles.
+*** Vieille méthode en script GDB :  Soit le code suivant
+#+begin_src C
+#include <iostream>
+
+using namespace std;
+struct point {
+    int x;
+    int y;
+    int index;
+    point(int _x = 0 , int _y = 0, int _index = 0):x(_x),y(_y),index(_index){}
+};
+
+int globalIndex=0; //beurk!
+
+struct triangle
+{
+    point t[3];
+    triangle(int values[6])
+    {
+      t[0] = point(values[0], values[1],globalIndex++);
+      t[1] = point(values[2], values[3],globalIndex++);
+      t[2] = point(values[4], values[5],globalIndex++);
+    }
+};
+
+int main()
+{
+    globalIndex = 0;
+    int coords[6]= {0, 0, 0, 1, 1, 0};
+    triangle t1(coords);
+    cout << "coucou" << endl;
+    return 0;
+}
+#+end_src
+*** Si on fait un affichage classique d'un triangle
+#+begin_src gdb
+(gdb) p t1
+$1 = {t = {{x = 0, y = 0, index = 0}, {x = 0, y = 1, index = 1}, {x = 1, y = 0, index = 2}}}
+#+end_src
+**** si on veut afficher seulement les indices, e.g. on peut rajouter le code 
+    suivant à =~/.gdbinit=
+#+begin_src gdb
+define pTriangle
+if $argc == 0
+    help pTriangle
+end
+if $argc == 1
+    printf "Triangle : [%d, %d, %d]\n", $arg0.t[0].index, $arg0.t[1].index, $arg0.t[2].index
+end
+end
+document pTriangle
+    Prints the list of index of a triangle
+    Syntax: pTriangle vector
+end
+#+end_src
+**** On peut dorénavant utiliser la commande =pTriangle= pour afficher un triangle
+#+begin_src gdb
+(gdb) pTriangle t1
+Triangle : [0, 1, 2]
+#+end_src
+*** Nouvelle méthode basé sur des scripts Python : exemple en Fortran
+#+begin_src fortran
+program print_triangle
+    type point
+        integer ::x, y, index
+    end type point
+
+    type triangle
+        type(point) :: t(3)
+    end type triangle
+
+    integer :: global_index
+    type(point) :: z
+    type(triangle) :: t1
+    z = point(2,2, 3)
+    t1 = init_triangle( [0, 0, 0, 1, 1, 0] , [1, 2, 3])
+    print *, "coucou"
+
+contains
+    pure function init_triangle(values, indexes) result(t)
+        type(triangle) :: t
+        integer, intent(in) :: values(6), indexes(3)
+           t%t(1) = point(values(1), values(2), indexes(1))
+           t%t(2) = point(values(3), values(4), indexes(2))
+           t%t(3) = point(values(5), values(6), indexes(3))
+    end function init_triangle
+end program print_triangle
+#+end_src
+**** On peut écrire le code d'afficheur suivant dans le fichier pretty.py
+#+begin_src python
+class PointPrinter(object):
+    def __init__(self, val):
+        self.val = val
+    def to_string(self):
+        return ("("+str(self.val["x"])+", "+str(self.val["y"])+")")
+       # return (str(self.val["index"]))
+
+def Point_lookup(val):
+    if str(val.type) == 'Type point':
+       return PointPrinter(val)
+    return None
+
+class TrianglePrinter(object):
+    def __init__(self, val):
+        self.val = val
+    def to_string(self):
+        return "".join(map((lambda x : str(self.val["t"][x]["index"])+" "), [1, 2, 3]))
+
+def Triangle_lookup(val):
+    if str(val.type) == 'Type triangle':
+       return TrianglePrinter(val)
+    return None
+
+gdb.pretty_printers.append(Point_lookup)
+gdb.pretty_printers.append(Triangle_lookup)
+#+end_src
+**** en utilisant le script d'execution suivant si on compile le programme 
+     avec =gfortran -o fo -g prettry_print.f90=
+#+begin_src gdb
+file fo
+b 15
+run
+python execfile("pretty.py")
+p z
+p t1
+#+end_src
+
+_Note_: ceci marche avec la version 8.0 de gdb, pour les versions anterieurs 
+voir, la méthode ici [[https://codeyarns.com/2014/07/17/how-to-enable-pretty-printing-for-stl-in-gdb/][pretty-print]]
