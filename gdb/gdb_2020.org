@@ -22,10 +22,11 @@ guix environment --ad-hoc vim gdb gfortran-toolchain coreutils python git -- /bi
 - simuler l'exécution du programme pas-à-pas avec un dévermineur → gdb, ddt,
   etc...
 - utiliser les bonnes options du compilateur pour trouver des dépassements 
-  e.g. =-fsanitize==address= 
-  (https://github.com/google/sanitizers/wiki/AddressSanitizer) ou =-fcheck==bounds=
+  e.g. *-fsanitize=address*
+  (https://github.com/google/sanitizers/wiki/AddressSanitizer) ou 
+  _-fcheck=bounds_
 - utiliser un simulateur automatique qui recherche les écritures et lectures
-  invalides, les fuites de mémoire, etc... → valgrind --tool=memcheck ou 
+  invalides, les fuites de mémoire, etc... → *valgrind --tool=memcheck*
 * Présentation de GDB
 ** points d'arrêt
 *** Compilez le programme suivante =gfortran -g ex_1.f90=
@@ -88,14 +89,15 @@ Num     Type           Disp Enb Address            What
 #+end_src
 *** lancer l'execution
 #+begin_src gdb
+(gdb) run
 4         print *, id([(i,i=1,5)])
 #+end_src gdb
 *** point d'arrêt conditionnel
 On peut utiliser un point d'arrêt en ajoutant une condition. On peut souhaiter
 s'arrêter à une iteration précise dans une boucle. La syntaxe conditionelle 
 est la suivante =b ligne if condition=. Par exemple, si l'on veut stopper dans la fonction 
-=cumsums= à l'iteration où =i= vaut 3
- - on va a ligne 13 dans la fonction
+=cumsum= à l'iteration où =i= vaut 3
+ - on va a ligne 13
 #+begin_src gdb
 (gdb) disable 2
 (gdb) tb 13
@@ -106,7 +108,6 @@ Continuing.
 Temporary breakpoint 3, ex_1::cumsum (__result=..., x=...)
     at ex_1.f90:13
 13          do i =2, size(x, 1)
-(
 #+end_src
  - et l'on pose un point d'arrêt conditionel
 #+begin_src gdb
@@ -136,24 +137,24 @@ Breakpoint 1, ex_1::id (__result=..., x=...) at ex_1.f90:22
 ** Exécution pas à pas
 Pour simuler l'exécution du programme dans GDB, nous disposons de 
  diverses commandes pour se déplacer dans le code
-*** descendre dans une fonction sur la ligne courante
+*** descendre dans une fonction sur la ligne courante *step*
 #+begin_src gdb
 (gdb) s
 ex_1::cumsum (__result=..., x=...) at ex_1.f90:8
 8         pure function cumsum(x) result(y)
 #+end_src
-*** passer a l'instruction d'aprés =n=
+*** passer a l'instruction d'aprés *next*
 #+begin_src gdb
 (gdb) n
 12          y(1) = x(1)
 #+end_src
 *** continuer jusqu'à une ligne =until=
 #+begin_src gdb
-(gdb) until 14
+(gdb) u 14
 ex_1::cumsum (__result=..., x=...) at ex_1.f90:14
 14            y(i) = y(i-1) + x(i)
 #+end_src
-*** aller à la fin d'une fonction
+*** aller à la fin d'une fonction *finish*
 #+begin_src gdb
 (gdb) fin
 Run till exit from #0  ex_1::cumsum (__result=..., x=...)

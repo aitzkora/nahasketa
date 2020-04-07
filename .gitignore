@@ -8,3 +8,6 @@ tags
 build
 *slides.html
 *.so
+*.x
+*.mod
+*.[0-9]*
