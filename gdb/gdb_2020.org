@@ -2,9 +2,8 @@
 #+AUTHOR: Marc Fuentes
 #+EMAIL: marc.fuentes@inria.fr
 #+DATE: 07 avril 2020
-#+STARTUP: content hidestars
+#+STARTUP: content hidestars inlineimages
 #+LINK: org info:org#%s
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="css/stylesheet.css"/>
 Salut à toi !  Bienvenue dans la bidouille !
 
 Ce fichier est disponible à http://sed.bordeaux.inria.fr/la-bidouille
@@ -19,12 +18,12 @@ guix environment --ad-hoc vim gdb gfortran-toolchain coreutils python git -- /bi
 
 * Méthodes de déverminage
 - utiliser une instruction d'affichage : =printf= , =cout <<=, =print*,= → bricolage
-- simuler l'exécution du programme pas-à-pas avec un dévermineur → gdb, ddt,
+- simuler l'exécution du programme pas-à-pas avec un dévermineur → Gnu GDB, Alinea DDT,
   etc...
 - utiliser les bonnes options du compilateur pour trouver des dépassements 
   e.g. *-fsanitize=address*
   (https://github.com/google/sanitizers/wiki/AddressSanitizer) ou 
-  _-fcheck=bounds_
+  _*-fcheck=bounds_* 
 - utiliser un simulateur automatique qui recherche les écritures et lectures
   invalides, les fuites de mémoire, etc... → *valgrind --tool=memcheck*
 * Présentation de GDB
@@ -137,13 +136,13 @@ Breakpoint 1, ex_1::id (__result=..., x=...) at ex_1.f90:22
 ** Exécution pas à pas
 Pour simuler l'exécution du programme dans GDB, nous disposons de 
  diverses commandes pour se déplacer dans le code
-*** descendre dans une fonction sur la ligne courante *step*
+*** descendre dans une fonction sur la ligne courante =step=
 #+begin_src gdb
 (gdb) s
 ex_1::cumsum (__result=..., x=...) at ex_1.f90:8
 8         pure function cumsum(x) result(y)
 #+end_src
-*** passer a l'instruction d'aprés *next*
+*** passer a l'instruction d'aprés =next=
 #+begin_src gdb
 (gdb) n
 12          y(1) = x(1)
@@ -154,7 +153,7 @@ ex_1::cumsum (__result=..., x=...) at ex_1.f90:8
 ex_1::cumsum (__result=..., x=...) at ex_1.f90:14
 14            y(i) = y(i-1) + x(i)
 #+end_src
-*** aller à la fin d'une fonction *finish*
+*** aller à la fin d'une fonction =finish=
 #+begin_src gdb
 (gdb) fin
 Run till exit from #0  ex_1::cumsum (__result=..., x=...)
@@ -216,7 +215,7 @@ type = integer(kind=4) (5)
 (gdb) p x
 $3 = (1, 2, 3, 4, 5)
 #+end_src
-*** affichage réccurent (tant que la variable est dans la portée)
+*** affichage réccurent (quand la variable est dans la portée)
 #+begin_src gdb
 (gdb) down
 #0  ex_1::cumsum (__result=..., x=...) at ex_1.f90:8
@@ -236,7 +235,7 @@ ex_1::cumsum (__result=..., x=...) at ex_1.f90:13
 (gdb) n
 14            y(i) = y(i-1) + x(i)
 1: i = 3
-(gdb) undisplay i
+(gdb) undisplay 1
 #+end_src
 *** données contiguës
 #+begin_src gdb
@@ -270,7 +269,7 @@ emplacement mémoire change de valeur, on utilise des points de surveillance
 | lecture  | rwatch   |
 | écriture | awatch   |
 | général  | watch    |
-*** exemple avec watch,
+*** exemple avec watch
 On va chercher quand la $4^{ème}$ valeur de =__result=  change de valeur :
  - on affiche la valeur du pointeur du tableau
 #+begin_src gdb
@@ -306,23 +305,23 @@ exemple les placer dans =~/.gdbinit=. Par exemple pour éviter de demander confi
 set confirm off
 #+end_src
 *** une application de ce principe concerne le déverminage parallèle d'un programme MPI
-**** Soit le programme C suivant 
-#+begin_src C :res pp
-#include <mpi.h>
-#include <stdio.h>
-int main(int argc, char* argv[]) {
-    int world_rank;
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    printf("%d-tik egun on!\n", world_rank);
-    MPI_Finalize();
-    return 0;
-}
+**** Soit le programme Fortran MPI suivant
+#+begin_src fortran
+program coucou
+  use mpi
+  implicit none
+  integer :: world_rank, ierr
+
+  call MPI_Init(ierr)
+  call MPI_Comm_rank(MPI_COMM_WORLD, world_rank, ierr)
+  print '(ai0a)', "Coucou depuis ", world_rank, " !"
+  call MPI_Finalize(ierr)
+end program 
 #+end_src
-*** et le script suivant
+*** et le script suivant =gdb_mpi.x= 
 #+begin_src gdb
 file ./a.out
-b 7
+b 8
 run
 #+end_src
 **** on peut lancer plusieurs terminaux qui exécutent chacun en parallèle le script gdb
@@ -337,67 +336,7 @@ tmpi 2 gdb -x gdb_scr
 ** affichage personnalisé  («pretty-printing»)
 Certains objets ou structures peuvent présenter une certaine complexité et leur
 affichage standard par gdb peut être pénibles.
-*** Vieille méthode en script GDB :  Soit le code suivant
-#+begin_src C
-#include <iostream>
-
-using namespace std;
-struct point {
-    int x;
-    int y;
-    int index;
-    point(int _x = 0 , int _y = 0, int _index = 0):x(_x),y(_y),index(_index){}
-};
-
-int globalIndex=0; //beurk!
-
-struct triangle
-{
-    point t[3];
-    triangle(int values[6])
-    {
-      t[0] = point(values[0], values[1],globalIndex++);
-      t[1] = point(values[2], values[3],globalIndex++);
-      t[2] = point(values[4], values[5],globalIndex++);
-    }
-};
-
-int main()
-{
-    globalIndex = 0;
-    int coords[6]= {0, 0, 0, 1, 1, 0};
-    triangle t1(coords);
-    cout << "coucou" << endl;
-    return 0;
-}
-#+end_src
-*** Si on fait un affichage classique d'un triangle
-#+begin_src gdb
-(gdb) p t1
-$1 = {t = {{x = 0, y = 0, index = 0}, {x = 0, y = 1, index = 1}, {x = 1, y = 0, index = 2}}}
-#+end_src
-**** si on veut afficher seulement les indices, e.g. on peut rajouter le code 
-    suivant à =~/.gdbinit=
-#+begin_src gdb
-define pTriangle
-if $argc == 0
-    help pTriangle
-end
-if $argc == 1
-    printf "Triangle : [%d, %d, %d]\n", $arg0.t[0].index, $arg0.t[1].index, $arg0.t[2].index
-end
-end
-document pTriangle
-    Prints the list of index of a triangle
-    Syntax: pTriangle vector
-end
-#+end_src
-**** On peut dorénavant utiliser la commande =pTriangle= pour afficher un triangle
-#+begin_src gdb
-(gdb) pTriangle t1
-Triangle : [0, 1, 2]
-#+end_src
-*** Nouvelle méthode basé sur des scripts Python : exemple en Fortran
+*** Soit le code suivant
 #+begin_src fortran
 program print_triangle
     type point
@@ -416,58 +355,91 @@ program print_triangle
     print *, "coucou"
 
 contains
+
     pure function init_triangle(values, indexes) result(t)
         type(triangle) :: t
         integer, intent(in) :: values(6), indexes(3)
-           t%t(1) = point(values(1), values(2), indexes(1))
-           t%t(2) = point(values(3), values(4), indexes(2))
-           t%t(3) = point(values(5), values(6), indexes(3))
+        t%t(1) = point(values(1), values(2), indexes(1))
+        t%t(2) = point(values(3), values(4), indexes(2))
+        t%t(3) = point(values(5), values(6), indexes(3))
     end function init_triangle
-end program print_triangle
+end program
 #+end_src
+*** Si on fait un affichage classique d'un triangle
+#+begin_src gdb
+(gdb) p t1
+$1 = {t = {{x = 0, y = 0, index = 0}, {x = 0, y = 1, index = 1}, {x = 1, y = 0, index = 2}}}
+#+end_src
+*** Vieille méthode basé sur du script GDB 
+**** si on veut afficher seulement les indices, on peut écrire le code gdb suivant dans =pretty.gdb=
+#+begin_src gdb
+define pTriangle
+if $argc .eq. 0
+    help pTriangle
+end
+if $argc .eq. 1
+    printf "Triangle : [%d, %d, %d]\n", $arg0 % t(1) % index, $arg0 % t(2) % index, $arg0 % t(3) % index
+end
+end
+document pTriangle
+    Prints the list of index of a triangle
+    Syntax: pTriangle triangle
+end
+#+end_src
+**** Dorénavant la commande =pTriangle= permet d'afficher les indices composant un triangle
+#+begin_src gdb
+(gdb) source pretty.gdb
+(gdb) pTriangle t1
+Triangle : [0, 1, 2]
+#+end_src
+*** Nouvelle méthode basé sur des scripts Python 
 **** On peut écrire le code d'afficheur suivant dans le fichier pretty.py
 #+begin_src python
+# afficheur dedié pour les points
 class PointPrinter(object):
     def __init__(self, val):
         self.val = val
     def to_string(self):
         return ("("+str(self.val["x"])+", "+str(self.val["y"])+")")
-       # return (str(self.val["index"]))
 
 def Point_lookup(val):
     if str(val.type) == 'Type point':
-       return PointPrinter(val)
+        return PointPrinter(val)
     return None
 
+gdb.pretty_printers.append(Point_lookup)
+
+# afficheur dedié pour les triangles
 class TrianglePrinter(object):
     def __init__(self, val):
-        self.val = val
+            self.val = val
     def to_string(self):
         return "".join(map((lambda x : str(self.val["t"][x]["index"])+" "), [1, 2, 3]))
 
 def Triangle_lookup(val):
     if str(val.type) == 'Type triangle':
-       return TrianglePrinter(val)
+        return TrianglePrinter(val)
     return None
 
-gdb.pretty_printers.append(Point_lookup)
 gdb.pretty_printers.append(Triangle_lookup)
 #+end_src
-**** en utilisant le script d'execution suivant si on compile le programme 
-     avec =gfortran -o fo -g prettry_print.f90=
+**** on peut utiliser l'afficheur dedié après son chargement
 #+begin_src gdb
-file fo
-b 15
-run
-python execfile("pretty.py")
-p z
-p t1
+(gdb) source pretty.py 
+(gdb) p t1
+$2 = 1 2 3 
 #+end_src
-
 _Note_: ceci marche avec la version 8.0 de gdb, pour les versions anterieurs 
-voir, la méthode ici 
-[[https://codeyarns.com/2014/07/17/how-to-enable-pretty-printing-f-stl-in-gdb/][pretty-print]]
-*** Si vous utilisez tmux comme multiplexeur de terminal, jetez un coup d'oeil 
-    [[https://github.com/cyrus-and/gdb-dashboard][GDB Dashboard]]
-    il suffit de copier le gdbinit dans votre répertoire utilisateur sous le 
-    nom .gdbinit
+voir, la méthode ici [[https://codeyarns.com/2014/07/17/how-to-enable-pretty-printing-f-stl-in-gdb/][pretty-print]]
+*** Pour un interface texte plus sympa  [[https://github.com/cyrus-and/gdb-dashboard][GDB Dashboard]]
+**** copier le fichier .gdbinit dans ~/.gdbinit_dash et utiliser le 
+#+begin_src bash
+gdb -ix ~/.gdbinit_dash
+#+end_src
+**** image
+#+CAPTION: capture ecran gdb_dashboard
+#+ATTR_LATEX: width=\textwidth
+#+ATTR_ORG: :width=10%
+#+NAME: fig: pins gpio
+[[./gdb_dash.png]]
+
