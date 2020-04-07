@@ -104,7 +104,7 @@ Temporary breakpoint 3, ex_1::cumsum (__result=..., x=...)
 #+end_src
  - et l'on pose un point d'arrêt conditionel
 #+begin_src gdb
-(gdb) b 14 if i=3
+(gdb) b 14 if i .eq. 3
 Breakpoint 4 at 0x555555555dbb: file ex_1.f90, line 14.
 (gdb) c
 Continuing.
