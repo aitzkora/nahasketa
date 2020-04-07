@@ -1,21 +1,15 @@
-#+TITLE: Introduction à GNU GDB
+#+TITLE: Introduction à GNU GDB pour le fortran
 #+AUTHOR: Marc Fuentes
 #+EMAIL: marc.fuentes@inria.fr
 #+DATE: 07 avril 2020
 #+STARTUP: content hidestars inlineimages
 #+LINK: org info:org#%s
-Salut à toi !  Bienvenue dans la bidouille !
-
-Ce fichier est disponible à http://sed.bordeaux.inria.fr/la-bidouille
-
 #+COLUMNS: %38ITEM %TODO %TAGS
 * prérequis
-  - avoir installe gfortran et gdb sur son ordi. Sinon on peut travailler sur 
-    plafrim avec guix (a condition d'avoir fait un guix pull)
-#+begin_src sh
-guix environment --ad-hoc vim gdb gfortran-toolchain coreutils python git -- /bin/bash -norc
-#+end_src
-
+  - gfortran 
+  - gdb 
+  - python (optionel)
+  - openmpi (optionel)
 * Méthodes de déverminage
 - utiliser une instruction d'affichage : =printf= , =cout <<=, =print*,= → bricolage
 - simuler l'exécution du programme pas-à-pas avec un dévermineur → Gnu GDB, Alinea DDT,
@@ -23,7 +17,7 @@ guix environment --ad-hoc vim gdb gfortran-toolchain coreutils python git -- /bi
 - utiliser les bonnes options du compilateur pour trouver des dépassements 
   e.g. *-fsanitize=address*
   (https://github.com/google/sanitizers/wiki/AddressSanitizer) ou 
-  _*-fcheck=bounds_* 
+  *-fcheck=bounds* 
 - utiliser un simulateur automatique qui recherche les écritures et lectures
   invalides, les fuites de mémoire, etc... → *valgrind --tool=memcheck*
 * Présentation de GDB
@@ -437,9 +431,5 @@ voir, la méthode ici [[https://codeyarns.com/2014/07/17/how-to-enable-pretty-pr
 gdb -ix ~/.gdbinit_dash
 #+end_src
 **** image
-#+CAPTION: capture ecran gdb_dashboard
-#+ATTR_LATEX: width=\textwidth
-#+ATTR_ORG: :width=10%
-#+NAME: fig: pins gpio
-[[./gdb_dash.png]]
-
+#+NAME: fig: gdb dashboard 
+[[./gdb_dash.png][Capture écran]]
