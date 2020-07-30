@@ -75,6 +75,7 @@ program example
       print *, "dynamic type of m => son"
   end if
    
+  ! test one : without factory
   block  
     class(mother), allocatable :: m2
     allocate( son::m2 )
@@ -84,4 +85,49 @@ program example
        m2 % vec = [integer ::] ! cf Modern Fortran explained p 294 for a explanation
     end select 
   end block
+
+  ! test two : with factory
+  block
+    class(mother), allocatable :: m3, m4
+    m3 = factory(-2)
+    m4 = factory(3)
+
+    print *, "m3 is of type ", type_of(m3)
+    print *, "m4 is of type ", type_of(m4)
+    print '(*(g0,:,"; "))', m3 % return_something(), m4 % return_something()
+  end block
+contains 
+
+    function factory(mode) result(instance) 
+      integer, intent(in) :: mode
+      class(mother), allocatable :: instance
+
+      ! alloc 
+      if  (mode < 1) then
+         allocate( son::instance )
+      else
+         allocate( daughter::instance )
+      end if
+      ! assignement
+      select type(instance)
+      type is (daughter)
+          instance % x = mode
+          instance % y = mode
+      type is (son)
+          allocate (instance % vec(-mode))
+          instance % vec(:) = mode
+      end select 
+    end function
+
+    function type_of(instance) result(str)
+      character(len=8) :: str
+      class(mother), intent(in), allocatable :: instance
+      select type(instance)
+      type is (son)
+           str = 'son'
+      type is (daughter)
+          str = 'daughter'
+      end select
+    end function
+
 end program example
