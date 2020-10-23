@@ -1,7 +1,13 @@
+"""
+Mesh structure
+"""
 struct Mesh
     elements::Array{Array{Int64}}
 end
 
+"""
+graph structure
+"""
 struct Graph
     adj::Array{Array{Int64}}
 end
@@ -26,12 +32,19 @@ end
    @test Set(gen_parts(l, 3)) == Set(Set.([(1,2,4)])) 
 end
 
-function mesh_dual(m::Mesh, nbComPts::Int64)
+""" 
+mesh_dual(m::Mesh, nb_comp_pts::Int64)
+
+Compute the elements graph of the Mesh m respect to the following adjacency
+relationship
+e₁ ~ e₂ ↔ e₁,e₂ ont nb_comp_pts shared vertices 
+"""
+function mesh_dual(m::Mesh, nb_comp_pts::Int64)
     g = Array{Array{Int64}}[]
     T = Dict()
-    # build the hash table for each nbComPts selection
+    # build the hash table for each nb_comp_pts selection
     for (i, e) in enumerate(m.elements)
-         for r in gen_parts(e, nbComPts)
+         for r in gen_parts(e, nb_comp_pts)
               if (! haskey(T, r) )
                   T[r] = Set([i])
               else
@@ -40,24 +53,28 @@ function mesh_dual(m::Mesh, nbComPts::Int64)
          end
     end
     for ke in T
-        println(Tuple(ke.first), " → " ,typeof(ke.second))
+        @debug Tuple(ke.first), " → " ,typeof(ke.second)
     end
     #now build adjacency
-    typeof(T)
-    adj = Set{Int64}[], length(m.elements))
+    adj = [ Set{Int64}() for _ in 1:length(m.elements)]
     for (i, e) in enumerate(m.elements)
-        for r in gen_parts(e, nbComPts)
-            println(typeof(adj[i]))
-            #union!(adj[i], T[r])
+        for r in gen_parts(e, nb_comp_pts)
+            union!(adj[i], T[r])
         end
     end
     return adj
 end 
-@testset "bidon" begin
-    m  = Mesh([[1,2,3],
+
+@testset "mesh_dual" begin
+
+    m = Mesh([[1,2,3],
               [1,2,6],
               [2,6,5],
               [2,5,7],
-              [2,4,4],
+              [2,7,4],
               [2,4,3]])
+
+    @test mesh_dual(m, 1) == [ Set([1:6;]) for _ in 1:6]
+    @test mesh_dual(m, 3) == [ Set([i]) for i in 1:6]
+    @test mesh_dual(m, 2) == Set.(union.([[2,6], [1,3], [2,4], [3,5], [4,6], [1,5]], [[i] for i in 1:6]))
 end
