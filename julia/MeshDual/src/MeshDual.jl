@@ -74,27 +74,13 @@ function mesh_dual(m::Mesh, nb_comp_pts::Int64)
     return adj
 end 
 
-@testset "mesh_dual" begin
-
-    m = Mesh([[1,2,3],
-              [1,2,6],
-              [2,6,5],
-              [2,5,7],
-              [2,7,4],
-              [2,4,3]])
-
-    @test mesh_dual(m, 1) == [ Set([1:6;]) for _ in 1:6]
-    @test mesh_dual(m, 3) == [ Set([i]) for i in 1:6]
-    @test mesh_dual(m, 2) == Set.(union.([[2,6], [1,3], [2,4], [3,5], [4,6], [1,5]], [[i] for i in 1:6]))
-end
-
 
 function mesh_to_metis_fmt(m::Mesh)
-    eptr = [0]
-    eind = Int64[] 
+    eptr = Cint[0]
+    eind = Cint[] 
     for (i, e) in enumerate(m.elements)
         append!(eptr, eptr[i]+length(e))
-        append!(eind, e)
+        append!(eind, e .- 1)
     end
     return (eptr, eind)
 end 
@@ -110,24 +96,26 @@ function compute_dual_by_metis(m::Mesh, n_common::Int)
         metis_str = "/usr/lib/libmetis.so"
     end
     lib_metis = dlopen(metis_str; throw_error=false)
-    @info lib_metis
+    @debug lib_metis
     @assert lib_metis != nothing
     grf_dual_ptr = dlsym(lib_metis, :libmetis__CreateGraphDual)
-    @info "CreateGraphDual Pointer", grf_dual_ptr
+    @debug "CreateGraphDual Pointer", grf_dual_ptr
     eptr, eind = mesh_to_metis_fmt(m)
-    #r_xadj = Ref{Ptr{Cint}}[]
-    #r_adjncy = Ref{Ptr{Cint}}[]
-    #ccall(grf_dual_ptr, Cvoid, 
-    #      (Cint, Cint, Ptr{Cint}, Ptr{Cint}, Cint, Ref{Ptr{Cint}}, Ref{Ptr{Cint}}),
-    #      size(m.elements, 1),
-    #      size(m.nodes, 1),
-    #      eptr,
-    #      eind,
-    #      n_common,
-    #      r_xadj,
-    #      r_adjncy
-    #     )
-    #return r_xadj[], r_adjncy[]
+    r_xadj = Ref{Ptr{Cint}}()
+    r_adjncy = Ref{Ptr{Cint}}()
+    ccall(grf_dual_ptr, Cvoid, 
+          (Cint, Cint, Ptr{Cint}, Ptr{Cint}, Cint, Ref{Ptr{Cint}}, Ref{Ptr{Cint}}),
+          size(m.elements, 1),
+          size(m.nodes, 1),
+          eptr,
+          eind,
+          n_common,
+          r_xadj,
+          r_adjncy
+         )
+    x_adj = [unsafe_load(r_xadj[] ,i) for i=1:length(m.elements)]
+    x_adjncy = [(unsafe_load(r_adjncy[],i)+1) for i=1:x_adj[end] ]
+    return x_adj, x_adjncy
 end 
 
 end # module
