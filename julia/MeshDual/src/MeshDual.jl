@@ -1,6 +1,6 @@
 module MeshDual
 
-export Mesh, Graph, mesh_dual, mesh_to_metis_fmt, compute_dual_by_metis, grf_dual_ptr, lib_metis
+export Mesh, Graph, mesh_dual, mesh_to_metis_fmt, compute_dual_by_metis, grf_dual_ptr, metis_fmt_to_mesh
 
 """
 `Mesh` implements a very basic topological structure for meshes
@@ -85,8 +85,15 @@ function mesh_to_metis_fmt(m::Mesh)
     return (eptr, eind)
 end 
 
+function metis_fmt_to_mesh(eptr::Array{Cint,1}, eind::Array{Cint,1})
+    elems = fill(Int64[],size(eptr,1)-1)
+    nodes = Int64[]
+    for i=1:length(eptr)-1
+        elems[i] = eind[eptr[i]+1:eptr[i+1]]
+    end
+    return Mesh(elems)
+end
 
-# try to use a function from metis 
 using Libdl: dlopen, dlsym
 
 function compute_dual_by_metis(m::Mesh, n_common::Int)
@@ -114,8 +121,9 @@ function compute_dual_by_metis(m::Mesh, n_common::Int)
           r_adjncy
          )
     x_adj = [unsafe_load(r_xadj[] ,i) for i=1:length(m.elements)]
-    x_adjncy = [(unsafe_load(r_adjncy[],i)+1) for i=1:x_adj[end] ]
+    x_adjncy = [unsafe_load(r_adjncy[],i) for i=1:x_adj[end] ]
     return x_adj, x_adjncy
+    #return metis_fmt_to_mesh(x_adj, x_adjncy)
 end 
 
 end # module
