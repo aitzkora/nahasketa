@@ -1,6 +1,6 @@
 module MeshDual
 
-export Mesh, Graph, mesh_dual, mesh_to_metis_fmt, compute_dual_by_metis, grf_dual_ptr, metis_fmt_to_mesh
+export Mesh, Graph, graph_dual, mesh_to_metis_fmt, metis_graph_dual, metis_fmt_to_graph
 
 """
 `Mesh` implements a very basic topological structure for meshes
@@ -10,9 +10,15 @@ struct Mesh
     nodes::Array{Int64,1}
     Mesh(elem::Array{Array{Int64,1},1})=
     begin
-        new(elem, unique(reduce(vcat,elem)))
+        new(elem, sort(reduce(union,elem)))
     end
 end
+
+"""
+Overloaded equality operator for Meshes : useful in tests
+"""
+Base.:(==)(a::Mesh, b::Mesh) = Base.:(==)(a.elements, b.elements) && Base.:(==)(a.nodes , b.nodes)
+
 
 """
 graph structure
@@ -46,14 +52,13 @@ mesh\\_dual(m::Mesh, nb\\_comp\\_pts::Int64)
 
 Compute the elements graph of the Mesh m respect to the following adjacency
 relationship
-e₁ ~ e₂ ↔ e₁,e₂ have nb\\_comp\\_pts shared vertices 
+e₁ ~ e₂ ↔ e₁,e₂ have n\\_common shared vertices 
 """
-function mesh_dual(m::Mesh, nb_comp_pts::Int64)
-    g = Array{Array{Int64}}[]
+function graph_dual(m::Mesh, n_common::Int64)
     T = Dict()
-    # build the hash table for each nb_comp_pts selection
+    # build the hash table for each n_common selection
     for (i, e) in enumerate(m.elements)
-         for r in gen_parts(e, nb_comp_pts)
+         for r in gen_parts(e, n_common)
               if (! haskey(T, r) )
                   T[r] = Set([i])
               else
@@ -67,36 +72,41 @@ function mesh_dual(m::Mesh, nb_comp_pts::Int64)
     #now build adjacency
     adj = [ Set{Int64}() for _ in 1:length(m.elements)]
     for (i, e) in enumerate(m.elements)
-        for r in gen_parts(e, nb_comp_pts)
+        for r in gen_parts(e, n_common)
             union!(adj[i], T[r])
         end
     end
-    return adj
+    # suppress reflexive adjacency
+    for (i, e) in enumerate(m.elements)
+        setdiff!(adj[i], i)
+    end
+    return Graph(map(x->sort(collect(keys(x.dict))), adj))
 end 
 
 
 function mesh_to_metis_fmt(m::Mesh)
     eptr = Cint[0]
     eind = Cint[] 
+    mini_node = Int32(minimum(m.nodes))
     for (i, e) in enumerate(m.elements)
         append!(eptr, eptr[i]+length(e))
-        append!(eind, e .- 1)
+        append!(eind, e .- mini_node)
     end
-    return (eptr, eind)
+    return (eptr, eind, mini_node)
 end 
 
-function metis_fmt_to_mesh(eptr::Array{Cint,1}, eind::Array{Cint,1})
+function metis_fmt_to_graph(eptr::Array{Cint,1}, eind::Array{Cint,1}, min_node::Cint = Cint(1))
     elems = fill(Int64[],size(eptr,1)-1)
     nodes = Int64[]
     for i=1:length(eptr)-1
-        elems[i] = eind[eptr[i]+1:eptr[i+1]]
+        elems[i] = eind[eptr[i]+1:eptr[i+1]] .+ min_node
     end
-    return Mesh(elems)
+    return Graph(elems)
 end
 
 using Libdl: dlopen, dlsym
 
-function compute_dual_by_metis(m::Mesh, n_common::Int)
+function metis_graph_dual(m::Mesh, n_common::Int)
     if "METIS_LIB" in keys(ENV)
         metis_str = ENV["METIS_LIB"]
     else
@@ -107,7 +117,7 @@ function compute_dual_by_metis(m::Mesh, n_common::Int)
     @assert lib_metis != nothing
     grf_dual_ptr = dlsym(lib_metis, :libmetis__CreateGraphDual)
     @debug "CreateGraphDual Pointer", grf_dual_ptr
-    eptr, eind = mesh_to_metis_fmt(m)
+    eptr, eind, mini_node = mesh_to_metis_fmt(m)
     r_xadj = Ref{Ptr{Cint}}()
     r_adjncy = Ref{Ptr{Cint}}()
     ccall(grf_dual_ptr, Cvoid, 
@@ -122,8 +132,7 @@ function compute_dual_by_metis(m::Mesh, n_common::Int)
          )
     x_adj = [unsafe_load(r_xadj[] ,i) for i=1:length(m.elements)]
     x_adjncy = [unsafe_load(r_adjncy[],i) for i=1:x_adj[end] ]
-    return x_adj, x_adjncy
-    #return metis_fmt_to_mesh(x_adj, x_adjncy)
+    return metis_fmt_to_graph(x_adj, x_adjncy, mini_node)
 end 
 
 end # module
