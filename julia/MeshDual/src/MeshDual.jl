@@ -1,6 +1,7 @@
 module MeshDual
 
-export Mesh, Graph, graph_dual, mesh_to_metis_fmt, metis_graph_dual, metis_fmt_to_graph
+export Mesh, Graph, graph_dual, mesh_to_metis_fmt, metis_graph_dual, metis_fmt_to_graph, 
+       mesh_to_scotch_fmt, graph_dual_new
 
 """
 `Mesh` implements a very basic topological structure for meshes
@@ -14,11 +15,6 @@ struct Mesh
     end
 end
 
-"""
-Overloaded equality operator for Meshes : useful in tests
-"""
-Base.:(==)(a::Mesh, b::Mesh) = Base.:(==)(a.elements, b.elements) && Base.:(==)(a.nodes , b.nodes)
-
 
 """
 graph structure
@@ -26,6 +22,12 @@ graph structure
 struct Graph
     adj::Array{Array{Int64,1},1}
 end
+
+"""
+Overloaded equality operator for Graphs 
+"""
+Base.:(==)(a::Graph, b::Graph) = Base.:(==)(a.adj, b.adj)
+
 
 using Test
 
@@ -48,7 +50,7 @@ end
 end
 
 """ 
-mesh\\_dual(m::Mesh, nb\\_comp\\_pts::Int64)
+graph\\_dual(m::Mesh, n\\_common::Int64)
 
 Compute the elements graph of the Mesh m respect to the following adjacency
 relationship
@@ -83,7 +85,11 @@ function graph_dual(m::Mesh, n_common::Int64)
     return Graph(map(x->sort(collect(keys(x.dict))), adj))
 end 
 
-
+"""
+mesh\\_to\\_metis\\_fmt(m::Mesh)
+converts a Mesh struct to a adjacency list defining a Metis Mesh
+i.e : nodes indexes must start to zero for metis
+"""
 function mesh_to_metis_fmt(m::Mesh)
     eptr = Cint[0]
     eind = Cint[] 
@@ -95,6 +101,72 @@ function mesh_to_metis_fmt(m::Mesh)
     return (eptr, eind, mini_node)
 end 
 
+"""
+mesh\\_to\\_scotch\\_fmt(m::Mesh)
+
+converts a mesh to the SCOTCH format (i.e. a bipartite graph)
+"""
+function mesh_to_scotch_fmt(m::Mesh)
+    eptr = Cint[0]
+    eind = Cint[]
+    baseval = minimum( m.nodes )
+    T = Dict()
+    # we construct an adjacency for nodes
+    for (i, e) in enumerate(m.elements)
+        append!(eptr, eptr[i]+length(e))
+        append!(eind, e .- baseval)
+        for n in e
+            if (! haskey(T, n))
+                T[n] = Cint[i]
+            else
+                union!(T[n], Cint[i])
+            end
+        end
+    end
+    ne = length(m.elements)
+    for (i, n) in enumerate(m.nodes)
+        append!(eptr, eptr[ne+i] + length(T[n]))
+        append!(eind, T[n] .- baseval)
+    end
+    eind[1:eptr[ne+1]] .+= Cint[ne]
+    return (eptr, eind , ne)
+end 
+
+"""
+graph\\_dual\\_new(m::Mesh, n_common::Int = 1)
+computes a dual graph(i.e. element graph) using a alternative method
+prototype for the futur scotch function
+"""
+function graph_dual_new(m::Mesh, n_common::Int = 1)
+  ptr, ind , ne = mesh_to_scotch_fmt(m)
+  adj = [Array{Int64,1}() for _ in 1:ne]
+
+  # first pass : compute adjacency for n_common = 1
+  for i=1:ne # ∀ e ∈ elems(m)
+      print("elem", i, " -> [") 
+      for n ∈ ind[1+ptr[i]:ptr[i+1]] # ∀ n ∈ e
+          print(n, " [ ")
+          for e₂ ∈ ind[ptr[n+1]+1:ptr[n+2]]
+             print(e₂, " ")
+             if e₂ ≠ (i-1)
+                 union!(adj[i],e₂)
+             end 
+          end 
+          print("], ")
+      end
+      println("] ");
+  end
+  if (n_common == 1)
+   return adj
+  else
+     
+  end 
+end
+"""
+metis\\_fmt\\_to\\_graph(eptr::Array{Cint,1}, eind::Array{Cint,1}, min_node::Cint)
+
+converts a metis adjncy list to a graph
+"""
 function metis_fmt_to_graph(eptr::Array{Cint,1}, eind::Array{Cint,1}, min_node::Cint = Cint(1))
     elems = fill(Int64[],size(eptr,1)-1)
     nodes = Int64[]
@@ -105,6 +177,11 @@ function metis_fmt_to_graph(eptr::Array{Cint,1}, eind::Array{Cint,1}, min_node::
 end
 
 using Libdl: dlopen, dlsym
+
+"""
+metis\\_graph\\_dual(m::Mesh, n_common::Int)
+computes the graph dual (i.e. elements graph using Metis)
+"""
 
 function metis_graph_dual(m::Mesh, n_common::Int)
     if "METIS_LIB" in keys(ENV)
@@ -130,7 +207,7 @@ function metis_graph_dual(m::Mesh, n_common::Int)
           r_xadj,
           r_adjncy
          )
-    x_adj = [unsafe_load(r_xadj[] ,i) for i=1:length(m.elements)]
+    x_adj = [unsafe_load(r_xadj[] ,i) for i=1:length(m.elements)+1]
     x_adjncy = [unsafe_load(r_adjncy[],i) for i=1:x_adj[end] ]
     return metis_fmt_to_graph(x_adj, x_adjncy, mini_node)
 end 
