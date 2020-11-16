@@ -143,25 +143,39 @@ function graph_dual_new(m::Mesh, n_common::Int = 1)
 
   # first pass : compute adjacency for n_common = 1
   for i=1:ne # ∀ e ∈ elems(m)
-      print("elem", i, " -> [") 
-      for n ∈ ind[1+ptr[i]:ptr[i+1]] # ∀ n ∈ e
-          print(n, " [ ")
-          for e₂ ∈ ind[ptr[n+1]+1:ptr[n+2]]
-             print(e₂, " ")
-             if e₂ ≠ (i-1)
-                 union!(adj[i],e₂)
-             end 
-          end 
-          print("], ")
-      end
-      println("] ");
+    for n ∈ ind[1+ptr[i]:ptr[i+1]] # ∀ n ∈ e
+      for e₂ ∈ ind[ptr[n+1]+1:ptr[n+2]] # ∀ e₂ ⊃ { n }
+        if e₂ ≠ (i-1)
+          union!(adj[i],e₂)
+        end 
+      end 
+    end
   end
+
   if (n_common == 1)
-   return adj
+    return adj
   else
-     
+    adjp = [Array{Int64,1}() for _ in 1:ne]
+    for e₁=1:ne 
+      for e₂ ∈ adj[e₁] 
+        accu = 0
+        for n₁ ∈ ind[1+ptr[e₁]:ptr[e₁+1]] 
+          for n₂ ∈ ind[1+ptr[e₂+1]:ptr[e₂+2]] 
+            if (n₁ == n₂ )
+                accu+=1
+            end 
+          end
+        end
+        if (accu >= n_common)
+            union!(adjp[e₁], e₂)
+        end
+      end 
+    end
+    return adjp
   end 
+
 end
+
 """
 metis\\_fmt\\_to\\_graph(eptr::Array{Cint,1}, eind::Array{Cint,1}, min_node::Cint)
 
