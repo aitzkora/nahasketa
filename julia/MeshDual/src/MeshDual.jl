@@ -1,7 +1,7 @@
 module MeshDual
 
 export Mesh, Graph, graph_dual, mesh_to_metis_fmt, metis_graph_dual, metis_fmt_to_graph, 
-       mesh_to_scotch_fmt, graph_dual_new
+       mesh_to_scotch_fmt, graph_dual_new, metis_mesh_to_dual
 
 """
 `Mesh` implements a very basic topological structure for meshes
@@ -224,6 +224,40 @@ function metis_graph_dual(m::Mesh, n_common::Int)
     x_adj = [unsafe_load(r_xadj[] ,i) for i=1:length(m.elements)+1]
     x_adjncy = [unsafe_load(r_adjncy[],i) for i=1:x_adj[end] ]
     return metis_fmt_to_graph(x_adj, x_adjncy, mini_node)
+end 
+
+"""
+metis\\_mesh\\_to\\_dual(;ne::Int64, nn::Int64, eptr::Array{Int64,1}, eind::Array{Int64,1}, baseval::Int64, ncommon::Int64)
+call the METIS_MeshToDual function
+"""
+
+function metis_mesh_to_dual(;ne::Int64, nn::Int64 , eptr::Array{Int32,1}, eind::Array{Int32,1}, ncommon::Int64, baseval::Int64)
+    if "METIS_LIB" in keys(ENV)
+        metis_str = ENV["METIS_LIB"]
+    else
+        metis_str = "/usr/lib/libmetis.so"
+    end
+    lib_metis = dlopen(metis_str; throw_error=false)
+    @debug lib_metis
+    @assert lib_metis != nothing
+    mesh_to_dual_ptr = dlsym(lib_metis, :METIS_MeshToDual)
+    @debug "METIS_MeshToDual Pointer", mesh_to_dual_ptr
+    r_xadj = Ref{Ptr{Cint}}()
+    r_adjncy = Ref{Ptr{Cint}}()
+    ccall(mesh_to_dual_ptr, Cvoid, 
+          (Ref{Cint}, Ref{Cint}, Ptr{Cint}, Ptr{Cint}, Ref{Cint}, Ref{Cint}, Ref{Ptr{Cint}}, Ref{Ptr{Cint}}),
+          Ref{Cint}(ne),
+          Ref{Cint}(nn),
+          eptr,
+          eind,
+          Ref{Cint}(ncommon),
+          Ref{Cint}(baseval),
+          r_xadj,
+          r_adjncy
+         )
+    x_adj = [unsafe_load(r_xadj[] ,i) for i=1:ne+1]
+    x_adjncy = [unsafe_load(r_adjncy[],i) for i=1:x_adj[end] ]
+    return x_adj, x_adjncy
 end 
 
 end # module

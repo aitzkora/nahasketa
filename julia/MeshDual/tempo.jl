@@ -31,3 +31,7 @@ m3p = graph_dual(m, 3);
 #@assert m1 == m1p
 #@assert m2 == m2p
 #@assert m3 == m3p # Sadly metis computes a strange result!
+
+eptr = Cint[ 0, 3, 6, 9, 12, 15, 18]
+eind = Cint[0, 1, 2, 0, 1, 5, 1, 5, 4, 1, 4, 6, 1, 6, 3, 1, 3, 2]
+xadj, adjncy = metis_mesh_to_dual(ne=6, nn= 7, eptr=eptr, eind=eind, ncommon = 1, baseval=0)
