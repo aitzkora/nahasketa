@@ -1,0 +1,11 @@
+cmake_minimum_required (VERSION 3.10)
+project(testMetis)
+enable_language(Fortran)
+find_library(METIS_LIB NAMES  metis HINTS ${METIS_LIB_DIR})
+if (METIS_LIB STREQUAL "METIS_LIB-NOTFOUND")
+  message(FATAL_ERROR "METIS library not found")
+endif()
+message(STATUS "METIS_LIB = ${METIS_LIB}")
+
+add_executable(test_metis test_metis_dual_f.f90)
+target_link_libraries(test_metis metis)
