@@ -53,6 +53,28 @@ function edge_cut(p::Partition)
   return accu
 end
 
+function total_com_vol(p::Partition)
+  dual = graph_dual(Mesh([p.triangles[i,:] for i=1:size(p.triangles,1)]),2)
+  inter = []
+  N_adj = zeros(size(dual.adj,1))
+  for i=1:size(dual.adj, 1)
+    accu = 0 
+    for j in dual.adj[i]
+      if (p.epart[j] != p.epart[i]) 
+        inter = union(inter, j)
+        accu += 1
+      end
+    end
+    N_adj[i] = accu
+  end
+  tot_vol = 0
+  for i =1:size(inter, 1)
+    tot_vol += p.vsize[inter[i]] * N_adj[inter[i]]
+  end
+  return tot_vol
+end
+
+
 w1 = read_files("/home/fux/sources/hou10ni2d/build")
 w2 = read_files("/home/fux/sources/hou10ni2d/build_with_scotch")
 
