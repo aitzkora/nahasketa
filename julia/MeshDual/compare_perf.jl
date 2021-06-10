@@ -93,3 +93,34 @@ function write_msh(p::Partition, filename)
   end
   close(file)
 end
+
+function read_mesh(filename, ::Val{D}) where {D}
+  @assert Val(D) isa Union{map(x->Val{x},1:3)...}
+  lines = readlines(filename)
+  lines = lines[map(x-> length(x) > 0 && x[1] != "#", lines)]
+  f_s(x) = findall(map(y->occursin(x,y),lines))[1]
+  dim = parse(Int64,lines[f_s("Dimension")+1])
+  @info "dim =", dim
+  @assert  D == dim
+  of_nodes = f_s("Vertices")
+  nb_nodes = parse(Int64, lines[of_nodes + 1])
+  nodes = zeros(Float64, nb_nodes, dim)
+  for i=1:nb_nodes
+    nodes[i, : ] = map(x->parse(Float64,x), split(lines[of_nodes + 1 + i])[1:end-1])
+  end
+  @info "nodes=", nodes
+  if (dim == 2)
+    of_elem = f_s("Triangles")
+  else
+    of_elem = f_s("Tetrahedra")
+  end
+  @info "haha = ",lines[of_elem]
+  return lines
+  #flush(Base.stdout)
+  #nb_elem = parse(Int64, lines[of_elem + 1])
+  #elements = zeros(Int64, nb_tri, dim + 1)
+  #for i=1:nb_tri
+  #  elements[i, : ] = map(x->parse(Int64,x), split(lines[of_elem + 1 + i])[1:dim+1])
+  #end
+  #SimplexMesh{D}(nodes, elements)
+end

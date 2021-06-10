@@ -15,6 +15,21 @@ struct Mesh
     end
 end
 
+"""
+Mesh structure with simplicial elements
+"""
+struct SimplexMesh{D}
+  dim::Int64
+  elements::Array{Int64,2}
+  nodes::Array{Float64,2}
+  function SimplexMesh{D}(nodes::Array{Float64,2}, elements::Array{Int64,2}) where {D}
+    @assert Val(D) isa Union{map(x->Val{x},1:3)...}
+    @assert D == size(nodes, 2)
+    @assert D+1 == size(elements, 2)
+    new{D}(D, nodes, elements)
+  end
+end
+
 
 """
 graph structure
