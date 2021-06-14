@@ -97,7 +97,7 @@ end
 function read_mesh(filename, ::Val{D}) where {D}
   @assert Val(D) isa Union{map(x->Val{x},1:3)...}
   lines = readlines(filename)
-  lines = lines[map(x-> length(x) > 0 && x[1] != "#", lines)]
+  lines = lines[map(x-> length(x) > 0 && (x[1] != '#'), lines)] # beware to the '
   f_s(x) = findall(map(y->occursin(x,y),lines))[1]
   dim = parse(Int64,lines[f_s("Dimension")+1])
   @info "dim =", dim
@@ -114,13 +114,10 @@ function read_mesh(filename, ::Val{D}) where {D}
   else
     of_elem = f_s("Tetrahedra")
   end
-  @info "haha = ",lines[of_elem]
-  return lines
-  #flush(Base.stdout)
-  #nb_elem = parse(Int64, lines[of_elem + 1])
-  #elements = zeros(Int64, nb_tri, dim + 1)
-  #for i=1:nb_tri
-  #  elements[i, : ] = map(x->parse(Int64,x), split(lines[of_elem + 1 + i])[1:dim+1])
-  #end
-  #SimplexMesh{D}(nodes, elements)
+  nb_elem = parse(Int64, lines[of_elem + 1])
+  elements = zeros(Int64, nb_elem, dim + 1)
+  for i=1:nb_elem
+    elements[i, : ] = map(x->parse(Int64,x), split(lines[of_elem + 1 + i])[1:dim+1])
+  end
+  SimplexMesh{D}(nodes, elements)
 end

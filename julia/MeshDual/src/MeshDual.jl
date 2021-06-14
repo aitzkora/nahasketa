@@ -1,7 +1,7 @@
 module MeshDual
 
 export Mesh, Graph, graph_dual, mesh_to_metis_fmt, metis_graph_dual, metis_fmt_to_graph, 
-       mesh_to_scotch_fmt, graph_dual_new, metis_mesh_to_dual
+       mesh_to_scotch_fmt, graph_dual_new, metis_mesh_to_dual, SimplexMesh
 
 """
 `Mesh` implements a very basic topological structure for meshes
@@ -20,8 +20,8 @@ Mesh structure with simplicial elements
 """
 struct SimplexMesh{D}
   dim::Int64
-  elements::Array{Int64,2}
   nodes::Array{Float64,2}
+  elements::Array{Int64,2}
   function SimplexMesh{D}(nodes::Array{Float64,2}, elements::Array{Int64,2}) where {D}
     @assert Val(D) isa Union{map(x->Val{x},1:3)...}
     @assert D == size(nodes, 2)
