@@ -50,26 +50,61 @@ function edge_cut(p::Partition)
       end
     end
   end
-  return accu
+  return accu / 2
 end
 
 function total_com_vol(p::Partition)
   dual = graph_dual(Mesh([p.triangles[i,:] for i=1:size(p.triangles,1)]),2)
-  inter = []
-  N_adj = zeros(size(dual.adj,1))
+  N_adj = zeros(Int64, size(dual.adj,1))
+  nb_inter = 0
   for i=1:size(dual.adj, 1)
     accu = 0 
     for j in dual.adj[i]
       if (p.epart[j] != p.epart[i]) 
-        inter = union(inter, j)
         accu += 1
       end
     end
-    N_adj[i] = accu
+    if (accu > 0) 
+      N_adj[i] = accu
+      nb_inter += 1
+    end
+    if accu > 0
+      println("info = $i, $accu, $nb_inter")
+    end
   end
   tot_vol = 0
-  for i =1:size(inter, 1)
-    tot_vol += p.vsize[inter[i]] * N_adj[inter[i]]
+  #println("nb_inter = " nb_inter
+  for i=1:size(dual.adj,1)
+
+    if (N_adj[i] > 0)
+      tot_vol += p.vsize[i] * N_adj[i]
+    end
+  end
+  return tot_vol
+end
+
+
+function total_com_vol_2(vertnnd::Int64, verttax, edgetax, vsize, epart)
+  N_adj = zeros(Int64, vertnnd)
+  nb_inter = 0
+  for vertnum=1:vertnnd-1
+    accu = 0 
+    partval = epart[vertnum]
+    for j=verttax[vertnum]:verttax[vertnum+1]
+      if (epart[edgetax[j+1]] != partval) 
+        accu += 1
+      end
+    end
+    if (accu > 0) 
+      N_adj[vertnum] = accu
+      nb_inter += 1
+    end
+  end
+  tot_vol = 0
+  for i=1:vertnnd-1
+    if (N_adj[i] > 0)
+      tot_vol += vsize[i] * N_adj[i]
+    end
   end
   return tot_vol
 end
@@ -121,3 +156,68 @@ function read_mesh(filename, ::Val{D}) where {D}
   end
   SimplexMesh{D}(nodes, elements)
 end
+
+function adj_to_eptr_eind(adj)
+  eptr = Cint[0]
+  eind = Cint[]
+  for i=1:size(adj,1)
+    append!(eptr, eptr[i] + size(adj[i],1))
+    append!(eind, adj[i])
+  end
+  return eptr, eind
+end
+
+using Libdl: dlopen, dlsym
+function scotch_output_vol(p::Partition)
+    if "SCOTCHMETIS_LIB"  in keys(ENV)
+        scotch_str = ENV["SCOTCHMETIS_LIB"]
+    else
+        @error "must define the env variable SCOTCH_LIB"
+    end
+    lib_scotch = dlopen(scotch_str; throw_error=false)
+    @debug lib_scotch
+    @assert lib_scotch != nothing
+    output_vol_ptr = dlsym(lib_scotch, :_SCOTCH_METIS_OutputVol2)
+    @debug "_SCOTCH_METIS_OutputVol Pointer", output_vol_ptr
+    volume = Ref{Cint}(0)
+    partnbr = maximum(p.npart) + 1
+    vertnnd = size(p.epart, 1)
+    dual = graph_dual(Mesh([p.triangles[i,:] for i=1:size(p.triangles,1)]),2)
+    eptr, eind = adj_to_eptr_eind(dual.adj)
+    @info "vertnnd = ", vertnnd
+    @info "partnbr =", partnbr
+    ccall(output_vol_ptr, Cint, 
+          (Cint, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{Cint}, Cint, Ptr{Cint}, Ref{Cint}),
+          Cint(0),
+          Cint(vertnnd),
+          eptr,
+          eind,
+          map(Cint,p.vsize),
+          Cint(partnbr),
+          map(Cint,p.epart),
+          volume
+         )
+    return volume
+end
+
+function scotch_sizeof()
+    if "SCOTCH_LIB"  in keys(ENV)
+        scotch_str = ENV["SCOTCH_LIB"]
+    else
+        @error "must define the env variable SCOTCH_LIB"
+    end
+    lib_scotch = dlopen(scotch_str; throw_error=false)
+    @debug lib_scotch
+    @assert lib_scotch != nothing
+    scotch_num_sizeof_ptr = dlsym(lib_scotch, :SCOTCH_numSizeof)
+    w = ccall(scotch_num_sizeof_ptr, Cint, (),)
+    return w
+end
+
+tv_1 = scotch_output_vol(w1)
+tv_2 = scotch_output_vol(w2)
+
+@info tv_1
+#@info tv_2
+#@info total_com_vol(w1)
+#@info total_com_vol(w2)
