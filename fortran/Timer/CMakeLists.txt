@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.10)
+project(CallBack)
+enable_language(Fortran C)
+if (${CMAKE_Fortran_COMPILER} MATCHES "ifort.*$")
+  set(CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS}  -DICC -DALIGN_64 -restrict -O3  -g -xavx -ipo -fargument-noalias  -ansi-alias -Wall -vec-report3")
+else ()
+  set (USING_GNU TRUE)
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -O3 -Wall -march=native")
+endif ()
+
+add_executable(run call_back.f90 m_call_back.f90 utils.c m_utils.f90)

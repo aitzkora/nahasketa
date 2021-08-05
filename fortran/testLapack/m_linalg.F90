@@ -1,42 +1,42 @@
 module m_linalg
 
-    public :: pretty_print, symmetrize, compute_inv
+  public :: pretty_print, symmetrize, compute_inv
 
 contains 
 
-    subroutine pretty_print(a)
-        real(kind=8), intent(in) :: a(:,:)
-        integer  :: s(2)
-        character(25) :: fmt
-        s = size( a )
-        write (fmt, '(ai0ai0a)') '(', s(1), '(1x', s(2), 'f9.3/))' 
-        print fmt, a 
-    end subroutine pretty_print
+ subroutine pretty_print(a)
+   real(kind=8), intent(in) :: a(:,:)
+   integer  :: s(2)
+   character(25) :: fmt
+   s = size( a )
+   write (fmt, '(ai0ai0a)') '(', s(1), '(1x', s(2), 'f9.3/))' 
+   print fmt, a 
+ end subroutine pretty_print
 
-    subroutine symmetrize(a)
-        real(kind=8), intent(inout) :: a(:,:)
-        integer :: m,n 
-        m = size(a, 1)
-        n = size(a, 2)
-        do i=1,m 
-        do j=i+1, n
-        a(j,i) = a(i,j)
-        end do
-        end do
-    end subroutine symmetrize 
+ subroutine symmetrize(a)
+   real(kind=8), intent(inout) :: a(:,:)
+   integer :: m,n 
+   m = size(a, 1)
+   n = size(a, 2)
+   do i=1,m 
+     do j=i+1, n
+       a(j,i) = a(i,j)
+     end do
+   end do
+ end subroutine symmetrize 
 
-    function compute_inv(a) result(a_inv)
-        real(kind=8), intent(in) :: a(:,:)
-        real(kind=8), allocatable :: a_inv(:,:) 
-        integer :: n, info
-        n = size(a,1)
+ function compute_inv(a) result(a_inv)
+     real(kind=8), intent(in) :: a(:,:)
+     real(kind=8), allocatable :: a_inv(:,:) 
+     integer :: n, info
+     n = size(a,1)
 
-        allocate(a_inv, mold=a)
-        a_inv = a
-        call dpotrf('U', n, a_inv, n, info)
-        call dpotri('U', n, a_inv, n, info)
-        call symmetrize(a_inv)
+     allocate(a_inv, mold=a)
+     a_inv = a
+     call dpotrf('U', n, a_inv, n, info)
+     call dpotri('U', n, a_inv, n, info)
+     call symmetrize(a_inv)
 
-    end function compute_inv
+ end function compute_inv
 
 end module m_linalg

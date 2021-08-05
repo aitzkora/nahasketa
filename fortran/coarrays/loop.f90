@@ -1,12 +1,14 @@
 program loop
     integer, parameter :: N = 1000000000
-    real(kind=8) :: s[*], accu
+    integer, parameter :: dp = selected_real_kind(15,307)
+    real(kind=dp) :: s[*], accu
     integer :: i, ind(2)
     ind = tile(N)
     s =  0
     do i=ind(1), ind(2)
     s = s + i
     end do
+    print *, "num images = ", num_images()
     !print '(i0ai0ai0aE7.2)', this_image(), " → [", ind(1), ",", ind(2), "] = ", s
     sync all
     if (this_image() == 1) then

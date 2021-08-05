@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.9)
 enable_language(C)
 project(example_call_back DESCRIPTION "illustrate how to set a callback from Python")
-find_package(PythonLibs REQUIRED)
-find_package(Threads REQUIRED)
+#find_package(PythonLibs REQUIRED)
+#find_package(Threads REQUIRED)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_library(call_back SHARED call_back.c)
-target_compile_definitions(call_back PRIVATE Py_LIMITED_API)
-target_include_directories(call_back PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries(call_back PRIVATE ${CMAKE_DL_LIBS} Threads::Threads ${PYTHON_LIBRARIES} rt)
+#target_compile_definitions(call_back PRIVATE Py_LIMITED_API)
+#target_include_directories(call_back PRIVATE ${PYTHON_INCLUDE_DIRS})
+#target_link_libraries(call_back PRIVATE ${CMAKE_DL_LIBS} Threads::Threads ${PYTHON_LIBRARIES} rt)
 
 
 add_library(compute_sqrt SHARED compute_sqrt.c)
