@@ -1,0 +1,2 @@
+#!/bin/bash
+gcc -o get_size_$1 -I/home/fux/configs/$1/include get_size.c -L/home/fux/configs/$1/lib -lscotch 
