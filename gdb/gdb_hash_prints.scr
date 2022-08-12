@@ -1,0 +1,91 @@
+# define a special macro
+define print_to_proc
+ set $i = $arg1
+ while $i < $arg0
+  p toProc($arg0, $i, $arg1, $arg2)
+  set $i = $i + 1
+ end
+end
+
+define print_to_send 
+ set $i = 0
+ while $i < $arg0
+  if sendsizes[$i] != 0
+    p tosend[$i][0]@(sendsizes[$i])
+  end
+  set $i = $i + 1
+ end
+end
+
+define print_to_tile
+ set $i = $arg1
+ while $i < $arg2
+  set $stores = (int *) malloc(3*sizeof(int))
+  call tile($arg0, $i, $arg1, $arg2, $stores, $stores + 1, $stores + 2)
+  call (void) printf("%d -> %d %d %d\n", $i, *($stores), *($stores +1), *($stores + 2))
+  set $i = $i + 1
+  call (void) free($stores)
+ end
+end
+
+define print_stride
+  set $i = 1
+  while $i < ercvdsptab[3]
+    call (void) printf("(%d,%d) ", $i, ercvdattab[$i] - chkstridx)
+    call (void) fflush(0)
+    set $i = $i + 2
+  end
+  call (void) printf("\n")
+end 
+
+
+define print_even 
+  set $i = 0
+  call (void) printf("[")
+  while $i < $arg1
+    call (void) printf("%d ", $arg0[$i])
+    set $i = $i + 2
+  end
+  call (void) printf("]\n")
+  call (void) fflush(0)
+end
+
+define print_hastables
+  set $j = 0
+  while $j < chksize
+    set $i = 0
+    call (void) printf("[")
+    while $i < hashsiz 
+      if $arg0[$j][$i] != ~0 
+       call (void) printf("%d ", $arg0[$j][$i])
+      end
+      set $i = $i + 1
+    end
+    call (void) printf("]\n")
+    set $j = $j + 1
+  end
+  call (void) fflush(0)
+end
+
+define print_hash2
+  set $hdx = 0
+  call (void) printf("{")
+  while $hdx < hashsiz
+   if  $arg0[$hdx].value != ~0 
+       call (void) printf("%d -> %d, ", $arg0[$hdx].value, $arg0[$hdx].pos)
+   end
+   set $hdx = $hdx + 1
+  end
+  call (void) printf("}\n")
+  call (void) fflush(0)
+end
+
+
+set startup-quietly on
+set debug libthread-db 0
+show debug libthread-db 0
+set print thread-events off
+set debuginfod enabled off
+file /home/fux/iturriak/ene_skotx/build/bin/test_libparmetis_dual
+b parmetis_dgraph_dual.c:515
+run
