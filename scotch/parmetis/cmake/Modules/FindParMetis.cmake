@@ -1,0 +1,20 @@
+# We start with parmetis because if we find it, we use the also contained metis lib
+# parmetis
+find_library(PARMETIS_LIB NAMES parmetis HINTS ${PARMETIS_LIB_DIR})
+if(PARMETIS_LIB)
+  set(PARMETIS_FOUND ON)
+  message(STATUS "PARMETIS_LIB = ${PARMETIS_LIB}")
+  find_library(METIS_LIB NAMES metis HINTS ${METIS_LIB_DIR})
+  message(STATUS "METIS_LIB = ${METIS_LIB}")
+  find_file(PARMETIS_INC NAMES parmetis.h HINTS ${PARMETIS_INC_DIR} PATH_SUFFIXES include metis parmetis) 
+  if(PARMETIS_INC)
+    message(STATUS "Parmetis header file = ${PARMETIS_INC}")
+    get_filename_component(PARMETIS_INC ${PARMETIS_INC} DIRECTORY)
+    message(STATUS "extract path for parmetis.h = ${PARMETIS_INC}")
+  else()
+      message(FATAL_ERROR " we do not find parmetis.h")
+  endif()
+
+else()
+  message(FATAL_ERROR " we do not find the lib parmetis")
+endif()
