@@ -2,7 +2,7 @@ module find_cell
   implicit none
   integer, parameter :: fp = kind(1.d0)
   private
-  public:: find_cell_classic, fp
+  public:: find_triangle_classic, fp
 
 contains
 
@@ -35,7 +35,7 @@ contains
   end subroutine on_side_2d
 
 
-  subroutine find_cell_classic(coo,cell,x_node, cell_node,nb_cell)
+  subroutine find_triangle_classic(coo,cell,x_node,cell_node,nb_cell)
     real(fp), intent(in) :: coo(2)
     integer, intent(out) :: cell
     real(fp), intent(in) :: x_node(:,:)
@@ -44,13 +44,12 @@ contains
     logical                 ,allocatable :: flag_in (:)
     real   (kind=8)         ,allocatable :: xtri    (:,:)
     integer :: i_cell, nb_edge, k, node
-    nb_edge = 2
+    nb_edge = 3
     cell = 0
     allocate(flag_in(nb_edge))
     allocate(xtri(2, nb_edge))
     !xtri = spread([0.d0, 0.d0], 1 , nb_edge)
     do i_cell=1,nb_cell  
-      print *, "i_cell =", i_cell
       !if(cell .ne. 0) cycle !! for omp
       !! get coordinates of the nodes of the cell
       do k=1,nb_edge
@@ -65,7 +64,7 @@ contains
       call on_side_2d(coo,xtri(:,1),xtri(:,2),xtri(:,3),flag_in(1))
       call on_side_2d(coo,xtri(:,2),xtri(:,1),xtri(:,3),flag_in(2))
       call on_side_2d(coo,xtri(:,3),xtri(:,1),xtri(:,2),flag_in(3))
-      if(flag_in(1) .and. flag_in(2) .and. flag_in(3)) then
+      if(all(flag_in)) then
         cell = i_cell
         exit
       end if
@@ -75,37 +74,38 @@ contains
 
     return
 
-  end subroutine find_cell_classic
+  end subroutine find_triangle_classic
 
 end module find_cell
 
 program test_find_cell
     use find_cell
     implicit none
-    integer :: sx, sy, cell, nb_cell
+    integer :: sx, cell, nb_cells, nb_nodes
     real(fp), allocatable :: x_node(:,:)
     integer, allocatable:: cell_node(:,:)
     real(fp), allocatable :: coo(:)
     
     ! read nodes
     open(22, file='x_node.txt')
-    read(22,*) sx, sy
-    allocate(x_node(sx,sy))
+    read(22,*) sx, nb_nodes
+    allocate(x_node(sx,nb_nodes))
     read(22,*) x_node
     close(22)
-    !print *, sx, sy
+    print "(a,i0)", "nb_nodes = ", nb_nodes
+
     ! read cells
     open(22, file='cell_node.txt')
-    read(22,*) sx, sy
-    allocate(cell_node(sx,sy))
+    read(22,*) sx, nb_cells 
+    allocate(cell_node(sx, nb_cells))
     read(22,*) cell_node
     close(22)
-    !print *, sx, sy
+    print "(a,i0)", "nb_cells = ", nb_cells
+
 
     coo = [0.d0, 0.d0]
-    nb_cell = 8202 
-    call find_cell_classic(coo, cell, x_node, cell_node, nb_cell)
-    print *, 'cell containing (', coo, ') : ', cell
+    call find_triangle_classic(coo, cell, x_node, cell_node, nb_cells)
+    print '(a,2(f6.3,1x),a,i0)', 'cell containing (', coo, ') -> ', cell
 
 end program test_find_cell
 
