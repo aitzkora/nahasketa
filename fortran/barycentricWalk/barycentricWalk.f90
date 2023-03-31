@@ -76,14 +76,72 @@ contains
 
   end subroutine find_triangle_classic
 
-end module find_cell
+
+  subroutine compute_barycenters(coo, xtri, theta)
+    real(fp), intent(in) :: coo(2)
+    real(fp), intent(in) :: xtri(2,3)
+    real(fp), intent(out) :: theta(3)
+    real(fp) :: denom, a, b, c, d
+
+    a = xtri(1,2)-xtri(1,3) 
+    b = xtri(2,3)-xtri(2,2) 
+    denom = a * (xtri(1,1)-xtri(1,3)) + b * (xtri(2,1)-xtri(2,3))
+
+    if (abs(denom) < 1e-10) then
+       print *, "pb in compute_barycenters"
+       stop -1
+    endif
+
+    c = coo(1) - xtri(1, 3)
+    d = coo(2) - xtri(2, 3)
+
+    theta(1) = (a * c + b *d) / denom
+    theta(2) = ((xtri(2,3) - xtri(2,1)) * c + &
+                (xtri(1,1) - xtri(1,3)) * d) / denom
+    theta(3) = 1.d0 - theta(1) - theta(2)
+
+  end subroutine compute_barycenters
+
+
+  subroutine find_triangle_walk(coo, cell, x_node, cell_node, neighbors, nb_cell, cell_0)
+    real(fp), intent(in) :: coo(2)
+    integer, intent(out) :: cell
+    real(fp), intent(in) :: x_node(:,:)
+    integer, intent(in) :: cell_node(:,:)
+    integer, intent(in) :: neighbors(:,:)
+    integer, intent(in) :: nb_cell
+    integer, optional :: cell_0
+    logical :: find
+    real(fp) :: theta(3)
+    integer :: chg
+    if (present(cell_0)) then 
+      cell = cell_0
+    else
+      cell = 1
+    end if
+
+    find = .false.
+    do 
+      if (find) exit
+      call compute_barycenters(coo, x_node(:,cell_node(:,cell)), theta)
+      if (all(theta > 0)) then
+        find = .true.
+      else
+        chg = maxloc(abs(theta), 1, theta <= 0)  
+        
+      end if
+    end do
+
+  end subroutine find_triangle_walk
+
+end  module find_cell
 
 program test_find_cell
     use find_cell
     implicit none
-    integer :: sx, cell, nb_cells, nb_nodes
+    integer :: sx, cell, nb_cells, nb_nodes, nb_neighbors
     real(fp), allocatable :: x_node(:,:)
-    integer, allocatable:: cell_node(:,:)
+    integer, allocatable:: cell_node(:,:), neighbors(:,:)
     real(fp), allocatable :: coo(:)
     
     ! read nodes
@@ -102,9 +160,19 @@ program test_find_cell
     close(22)
     print "(a,i0)", "nb_cells = ", nb_cells
 
+   ! read neighbours
+    open(22, file='neigh.txt')
+    read(22,*) sx, nb_neighbors
+    allocate(neighbors(sx, nb_neighbors))
+    read(22,*) neighbors
+    close(22)
+    print "(a,i0)", "nb_neighbors = ", nb_neighbors
 
     coo = [0.d0, 0.d0]
     call find_triangle_classic(coo, cell, x_node, cell_node, nb_cells)
+    print '(a,2(f6.3,1x),a,i0)', 'cell containing (', coo, ') -> ', cell
+    
+    call find_triangle_walk(coo, cell, x_node, cell_node, neighbors, nb_cells)
     print '(a,2(f6.3,1x),a,i0)', 'cell containing (', coo, ') -> ', cell
 
 end program test_find_cell
