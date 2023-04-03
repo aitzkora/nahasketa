@@ -1,8 +1,9 @@
 module find_cell
+  use iso_fortran_env
   implicit none
   integer, parameter :: fp = kind(1.d0)
   private
-  public:: find_triangle_classic, fp
+  public:: find_triangle_classic, fp, find_triangle_walk
 
 contains
 
@@ -81,23 +82,24 @@ contains
     real(fp), intent(in) :: coo(2)
     real(fp), intent(in) :: xtri(2,3)
     real(fp), intent(out) :: theta(3)
-    real(fp) :: denom, a, b, c, d
+    real(fp) :: denom, a, b, c, d, rhs(2)
 
-    a = xtri(1,2)-xtri(1,3) 
-    b = xtri(2,3)-xtri(2,2) 
-    denom = a * (xtri(1,1)-xtri(1,3)) + b * (xtri(2,1)-xtri(2,3))
+    a = xtri(1,1) - xtri(1,3) 
+    b = xtri(1,2) - xtri(1,3) 
+    c = xtri(2,1) - xtri(2,3) 
+    d = xtri(2,2) - xtri(2,3) 
 
-    if (abs(denom) < 1e-10) then
+    denom = a * d - b * c
+
+    if (abs(denom) < 1e-10 * sqrt(sum(xtri**2))) then
        print *, "pb in compute_barycenters"
        stop -1
     endif
 
-    c = coo(1) - xtri(1, 3)
-    d = coo(2) - xtri(2, 3)
+    rhs = coo(1) - xtri(:, 3)
 
-    theta(1) = (a * c + b *d) / denom
-    theta(2) = ((xtri(2,3) - xtri(2,1)) * c + &
-                (xtri(1,1) - xtri(1,3)) * d) / denom
+    theta(1) = (rhs(1) * d - rhs(2) * b) / denom
+    theta(2) = (rhs(2) * a - rhs(1) * c) /denom
     theta(3) = 1.d0 - theta(1) - theta(2)
 
   end subroutine compute_barycenters
@@ -127,8 +129,14 @@ contains
       if (all(theta > 0)) then
         find = .true.
       else
-        chg = maxloc(abs(theta), 1, theta <= 0)  
-        
+        chg = maxloc(abs(theta), 1, theta <= 0 .and. neighbors(:, cell) /= -1)
+        if (chg /= 0) then
+           cell = neighbors(chg, cell)
+        else    
+           write (error_unit, *) "walk blocked on the boundary"
+           cell = 0
+           exit
+        end if
       end if
     end do
 
