@@ -105,8 +105,8 @@ contains
 
     denom = a * d - b * c
 
-    if (abs(denom) < 1e-10 * min(norm2([a,c]),norm2([b,d]))) then
-       print *, "compute_barycenters : find a small triangle, use order one approx"
+    if (abs(denom) < 1e-10 * sqrt(sum(xtri**2))) then
+       print *, "pb in compute_barycenters"
        stop -1
     endif
 
@@ -150,8 +150,9 @@ contains
         if (chg /= 0) then
            cell = neighbors(chg, cell)
         else    
-           cell = 0 
-           return
+           write (error_unit, *) "walk blocked on the boundary"
+           cell = 0
+           exit
         end if
       end if
     end do

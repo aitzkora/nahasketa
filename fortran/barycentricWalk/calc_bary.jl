@@ -7,9 +7,8 @@ function calc_bary(x, x0)
   d = x[2,2] - x[2,3]
   denom = a * d - b * c
 
-  if (abs(denom)/min(norm([a;c]),norm([b;d])) < 1e-10)
-     # les 2 vecteurs sont colinéaires
-     error("too much dependant vectors")
+  if (abs(denom)/norm(x,2) < 1e-10)
+     writeln("pb in compute_barycenters")
   end
   rhs = x0 - x[:, 3]
   theta = zeros(3)
@@ -29,9 +28,4 @@ function patho_x(epsi = 1e-13)
    v3 = epsi*(x[:,2]-x[:,1])
    x = [ x[:,1] v3+x[:,1] v3 ]
 end
-
-
-
-
-
 
