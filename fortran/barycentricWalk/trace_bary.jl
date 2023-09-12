@@ -18,11 +18,15 @@ function read_track(filename)
     return pt, track
 end 
 
-toTuple(z) = (x->tuple(x...)).(eachcol(z))
-nodes = toTuple(read_with_dim("x_node.txt",Float64))
-triangles = toTuple(read_with_dim("cell_node.txt",Int64))
-using Meshes
-
-m = SimpleMesh(nodes, connect.(triangles))
-using GLMakie
-viz(m, showfacets=true)
+function track2lines(nodes, triangles, track)
+    bar = x->sum(nodes[triangles[x,:],:] / 3., dims=1)
+    init = bar(i)
+    for pt in track
+        curr = bar(pt)
+    end
+     
+end
+nodes = read_with_dim("x_node.txt",Float64)'
+triangles = read_with_dim("cell_node.txt",Int64)'
+pt_search, tr = read_track("track_1.txt")
+fig, ax, plot = poly(nodes, triangles, strokewidth=1, shading=false, alpha=1.)
