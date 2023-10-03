@@ -42,7 +42,7 @@ function calc_bary(x, x0)
   denom = a * d - b * c
 
   if (abs(denom)/norm(x,2) < 1e-10)
-     writeln("pb in compute_barycenters")
+     @warn "pb in compute_barycenters"
   end
   rhs = x0 - x[:, 3]
   theta = zeros(3)
@@ -78,7 +78,6 @@ function find_triangle(coo, nodes, triangles, neighbors, filename::String = "")
     θ = calc_bary(nodes[triangles[cell,:],:]', coo)
     if (all(θ .> 0))
       found = true
-      #@info "$coo is in $cell"
     else
       θₙ = findall(.≠(0), neighbors[cell,:]) ∩ findall(.<=(0), θ) 
        if isempty(θₙ)
@@ -115,7 +114,7 @@ function generate_targets(nodes, triangles, n::Int64 = 1)
   targets = rand(1:nₜ, n)
   barycenters = zeros(n, 2)
   for i=1:n 
-    α = rand(2)
+    α = rand(2) / 2.
     append!(α, 1. - sum(α))
     barycenters[i,:] = sum(α .* nodes[triangles[targets[i],:],:],dims=1)
   end
@@ -127,16 +126,14 @@ triangles = read_with_dim("cell_node.txt", Int64)'
 neighbors = read_with_dim("neigh.txt", Int64)'
 t₀, п, track = read_track("track_1.txt")
 
-n = 10
+n = convert(Int64, floor(maximum(triangles) * 0.2))
 targets, barys = generate_targets(nodes, triangles, n)
 using Test
 for i=1:n
   ind = find_triangle(barys[i,:], nodes, triangles, neighbors)
   if (ind != targets[i])
-    #@warn ind, targets[i]
     println("😐: $ind != $(targets[i])")
   else
     println("👍: $ind == $(targets[i])")
   end
-  
 end
