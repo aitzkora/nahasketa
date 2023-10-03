@@ -63,36 +63,43 @@ function patho_x(epsi = 1e-13)
     x = [ x[:,1] v3+x[:,1] v3 ]
 end
 
-function find_triangle(coo, nodes, triangles, neighbors, filename)
+using Printf
+
+function find_triangle(coo, nodes, triangles, neighbors, filename::String = "")
   cell = 1
   found = false
-  file = open(filename, "w")
-  println(file, coo)
+  logging = !isempty(filename)
+  if (logging)
+    file = open(filename, "w")
+    println(file, 0)
+    @printf(file, "%f %f", coo...)
+  end 
   while !found
     θ = calc_bary(nodes[triangles[cell,:],:]', coo)
-    if (all(θ .>= 0))
+    if (all(θ .> 0))
       found = true
+      #@info "$coo is in $cell"
     else
-      θₙ = findall(.≠(0), neighbors[cell,:]) ∩ findall(.<(0), θ) 
-      if isempty(θₙ)
-        println("$coo not found")
+      θₙ = findall(.≠(0), neighbors[cell,:]) ∩ findall(.<=(0), θ) 
+       if isempty(θₙ)
+        @warn "$coo not found"
         break
       else
-        cell = neighbors[argmax(i->abs(θ[i]), θₙ)]
-        #println(file, cell)
-        println(file, cell)
+        cell = neighbors[cell, argmax(i->abs(θ[i]), θₙ)]
+        if (logging) println(file, cell) end
       end
     end  
   end
-  close(file)
+  if (logging) close(file) end
+  return cell
 end
 
 function plot_track(nodes, triangles, filename)
-    t₀, п, track = read_track(filename)
+  t₀, п, track = read_track(filename)
   bars = sum(nodes[triangles[track,:],:] / 3., dims=2)[:,1,:]
   mycols = fill(:white, size(triangles))
   mycols[1] = :red
-  mycols[t₀] = :red
+  #mycols[t₀] = :red
   fig, ax, plot = poly(nodes, triangles; color=mycols , strokewidth=1, shading=false, alpha=1., axis = (;aspect = DataAspect()))
   p₀ = sum(nodes[triangles[1,:],:] / 3., dims=2)[:,:]
   
@@ -103,7 +110,33 @@ function plot_track(nodes, triangles, filename)
   display(fig)
 end
 
+function generate_targets(nodes, triangles, n::Int64 = 1)
+  nₜ = maximum(triangles)
+  targets = rand(1:nₜ, n)
+  barycenters = zeros(n, 2)
+  for i=1:n 
+    α = rand(2)
+    append!(α, 1. - sum(α))
+    barycenters[i,:] = sum(α .* nodes[triangles[targets[i],:],:],dims=1)
+  end
+  return targets, barycenters
+end
+
 nodes = read_with_dim("x_node.txt", Float64)'
 triangles = read_with_dim("cell_node.txt", Int64)'
 neighbors = read_with_dim("neigh.txt", Int64)'
+t₀, п, track = read_track("track_1.txt")
 
+n = 10
+targets, barys = generate_targets(nodes, triangles, n)
+using Test
+for i=1:n
+  ind = find_triangle(barys[i,:], nodes, triangles, neighbors)
+  if (ind != targets[i])
+    #@warn ind, targets[i]
+    println("😐: $ind != $(targets[i])")
+  else
+    println("👍: $ind == $(targets[i])")
+  end
+  
+end
