@@ -110,7 +110,7 @@ contains
        stop -1
     endif
 
-    rhs = coo(1) - xtri(:, 3)
+    rhs = coo - xtri(:, 3)
 
     theta(1) = (rhs(1) * d - rhs(2) * b) / denom
     theta(2) = (rhs(2) * a - rhs(1) * c) /denom
@@ -122,41 +122,40 @@ contains
   !> taken from article "Efficient implementation of characteristic-based schemes 
   !> on unstructured triangular grids" by S. Cacace and R. Ferretti
   !> @note : compared to the brute force algorithm we need the neigbor array
-  subroutine find_triangle_walk(coo, cell, x_node, cell_node, neighbors, nb_cell, cell_0)
-    real(fp), intent(in) :: coo(2)
-    integer, intent(out) :: cell
-    real(fp), intent(in) :: x_node(:,:)
-    integer, intent(in) :: cell_node(:,:)
+  subroutine find_triangle_walk(coo, cell, x_node, cell_node, neighbors, cell_0)
+    real(fp), intent(in) :: coo(2) !> coordinates of the searched point
+    integer, intent(out) :: cell !> output : index of the cell containing the point
+    real(fp), intent(in) :: x_node(:,:) !> nodes of the mesh
+    integer, intent(in) :: cell_node(:,:) !> connectivity
     integer, intent(in) :: neighbors(:,:)
-    integer, intent(in) :: nb_cell
     integer, optional :: cell_0
     logical :: find
     real(fp) :: theta(3)
     integer :: chg
-    if (present(cell_0)) then 
+    
+    option : if (present(cell_0)) then
       cell = cell_0
     else
       cell = 1
-    end if
+    end if option
 
     find = .false.
     do 
-      if (find) exit
+      if (find) exit 
       call compute_barycenters(coo, x_node(:,cell_node(:,cell)), theta)
-      if (all(theta > 0)) then
+      if (all(theta >= 0.0_fp)) then
         find = .true.
       else
-        chg = maxloc(abs(theta), 1, theta <= 0 .and. neighbors(:, cell) /= -1)
+        chg = maxloc(abs(theta), 1, theta < 0.0_fp .and. (neighbors(:, cell) /= -1))
         if (chg /= 0) then
-           cell = neighbors(chg, cell)
+          cell = neighbors(chg, cell)
         else    
-           write (error_unit, *) "walk blocked on the boundary"
-           cell = 0
-           exit
+          write (error_unit, *) "walk blocked on the boundary", theta, neighbors(:, cell)
+          cell = 0
+          exit
         end if
       end if
     end do
-
   end subroutine find_triangle_walk
 
 end  module find_cell
@@ -167,11 +166,14 @@ program test_find_cell
     integer :: sx, nb_cells, nb_nodes, nb_neighbors, nb_finds, i
     real(fp), allocatable :: x_node(:,:)
     integer, allocatable:: cell_node(:,:), neighbors(:,:), res_clas(:), res_walk(:)
-    real(fp), allocatable ::  x_min(:), x_max(:), coo(:,:), alea(:,:)
+    real(fp), allocatable ::  coo(:,:), alea(:), alpha(:)
+    integer, allocatable :: targets(:)
     real :: start_time, stop_time
+    character(len=32) :: track_name
     ! read nodes
     open(22, file='x_node.txt')
     read(22,*) sx, nb_nodes
+    
     allocate(x_node(sx,nb_nodes))
     read(22,*) x_node
     close(22)
@@ -193,21 +195,20 @@ program test_find_cell
     close(22)
     print "(a,i0)", "nb_neighbors = ", nb_neighbors
 
-    x_min = [0.,0.]
-    x_max = x_min
-    x_min = minval(x_node, dim=2)
-    x_max = maxval(x_node, dim=2)
-
-    nb_finds = 30
-    alea = reshape(spread(0.d0, 1, nb_finds*2), [2, nb_finds])
+   
+    nb_finds = 100
+    alea = spread(0.d0, 1, nb_finds)
     call random_number(alea)
-    !coo(1,:) = coo(1,:) * (x_max(1)-x_min(1)) + x_min(1)
-    !coo(2,:) = coo(2,:) * (x_max(2)-x_min(2)) + x_min(2)
-    allocate(coo(2, nb_finds))
+    targets = int(floor(alea * nb_cells))
+    allocate(alpha(3))
+    allocate(coo(3, nb_finds))
 
-    coo(1,:) = alea(2,:) * cos(4.d0*atan(1.d0) * alea(1,:))
-    coo(2,:) = alea(2,:) * sin(4.d0*atan(1.d0) * alea(1,:))
-
+    do i=1, nb_finds
+      call random_number(alpha)
+      alpha = alpha / 2.
+      alpha(3) = 1. - sum(alpha(1:2))
+      coo(:, i) = matmul(x_node(: , cell_node(:, targets(i))),alpha)
+    end do
     call cpu_time(start_time)
         
     res_clas = spread(0, 1, nb_finds)
@@ -220,7 +221,7 @@ program test_find_cell
     call cpu_time(start_time)
     res_walk = spread(0, 1, nb_finds)
     do i=1,nb_finds
-      call find_triangle_walk(coo(:,i), res_walk(i), x_node, cell_node, neighbors, nb_cells)
+      call find_triangle_walk(coo(:,i), res_walk(i), x_node, cell_node, neighbors)
     end do
     call cpu_time(stop_time)
     print *, "tps cpu barycentric", stop_time-start_time
