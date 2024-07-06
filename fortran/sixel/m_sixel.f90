@@ -1,11 +1,16 @@
 module m_sixel
 
-  use iso_c_binding, only : c_int, c_ptr, c_signed_char
+  use iso_c_binding, only : c_int, c_ptr, c_signed_char, c_int8_t, c_funptr
   implicit none
 
+  integer(c_int) , parameter :: SIXEL_PIXELFORMAT_G8 = 67
+  integer(c_int), parameter :: SIXEL_BUILTIN_G8    = 9
 
+
+  !> interface to ad-hoc functions
   interface
 
+     !> code in  sixel_write.c
      function sixel_write(data, selem, desc) bind(c, name="sixel_write")
       use iso_c_binding
         character(c_char), intent(in) :: data(*)
@@ -14,9 +19,17 @@ module m_sixel
         integer(c_int) :: sixel_write
       end function sixel_write
 
+    !> to handle stdout in Fortran
+    function fdopenf(num_desc, mode) bind(C,name="fdopen") result(desc)
+      use iso_c_binding
+      integer(c_int), intent(in), value  :: num_desc
+      character(c_char), intent(in)  :: mode(*)
+      type(c_ptr) ::desc
+    end function
+
   end interface
 
-
+  !> interface to allocators
   interface
 
     function sixel_allocator_new(ppallocator, fnmalloc, fn_calloc, fn_realloc, fn_free) &
@@ -77,25 +90,42 @@ module m_sixel
     end subroutine sixel_allocator_free
 
 
-    function fdopenf(num_desc, mode) bind(C,name="fdopen") result(desc)
-    use iso_c_binding
-    integer(c_int), intent(in), value  :: num_desc
-    character(c_char), intent(in)  :: mode(*)
-    type(c_ptr) ::desc
-   end function
-
-
-
 
   end interface
-  
+ 
+  type, bind(c) :: sixel_output
+    integer(c_int) :: ref
+    type(c_ptr) :: allocator_ptr
+    integer(c_int8_t) ::  has_8bit_control
+    integer(c_int8_t) ::  has_sixel_scrolling
+    integer(c_int8_t) ::  has_gri_arg_limit
+    integer(c_int8_t) ::  has_sdm_glitch
+    integer(c_int8_t) ::  skip_dcs_envelope
+    integer(c_int8_t) ::  palette_type
+
+    type(c_funptr) :: fn_write
+
+    integer(c_int) :: save_pixel
+    integer(c_int) :: save_count
+    integer(c_int) :: active_palette
+
+    type(c_ptr) :: node_top
+    type(c_ptr) :: node_free
+
+    integer(c_int) :: penetrate_multiplexer
+    integer(c_int) :: encode_policy
+
+    type(c_ptr) ::  priv_ptr
+    integer(c_int) :: pos
+    integer(c_int8_t) ::  buffer(1)
+
+  end type sixel_output
 
   interface
 
-    function sixel_output_new(output, fn_write, priv, allocator) &
+    integer(c_int) function sixel_output_new(output, fn_write, priv, allocator) &
         bind(c,name="sixel_output_new")
       use iso_c_binding
-      integer(c_int) :: sixel_output_new
       type(c_ptr), intent(inout) :: output
       interface ! callback 
         integer(c_int) function fn_write(data, selem, desc)  bind(C)
@@ -105,7 +135,7 @@ module m_sixel
           type(c_ptr) :: desc
         end function  fn_write
       end interface
-      type(c_ptr) :: priv
+      type(c_ptr), intent(in), value :: priv
       type(c_ptr), intent(in), optional :: allocator
 
     end function sixel_output_new
@@ -140,5 +170,70 @@ module m_sixel
 
 
   end interface
+
+
+
+  type, bind(c) :: sixel_dither 
+    integer(c_int) ::  ref               
+    type(c_ptr) :: palette         
+    type(c_ptr) :: cachetable     
+    integer(c_int) :: reqcolors
+    integer(c_int) :: ncolors
+    integer(c_int) :: origcolors
+    integer(c_int) :: optimized
+    integer(c_int) :: optimize_palette
+    integer(c_int) :: complexion
+    integer(c_int) :: bodyonly
+    integer(c_int) :: method_for_largest
+    integer(c_int) :: method_for_rep
+    integer(c_int) :: method_for_diffuse
+    integer(c_int) :: quality_mode
+    integer(c_int) :: keycolor
+    integer(c_int) :: pixelformat
+    type(c_ptr)  :: allocator
+   end type
+
+
+  !> interfaces to dither functions
+  interface
+
+      !> returns a built-in dither context object
+       function sixel_dither_get(dither_mode) &
+                bind(c, name="sixel_dither_get")
+        use iso_c_binding 
+        import sixel_dither
+        type(c_ptr) :: sixel_dither_get 
+        integer(c_int), value :: dither_mode
+      end function sixel_dither_get
+
+      subroutine sixel_dither_set_pixelformat(dither, pixel_format) &
+                 bind(c, name="sixel_dither_set_pixelformat")
+        use iso_c_binding
+        type(c_ptr), intent(in), value :: dither
+        integer(c_int), intent(in), value :: pixel_format
+      end subroutine sixel_dither_set_pixelformat
+
+
+  end interface
+  
+  !> interface to encode
+
+   interface
+
+      !> returns a built-in dither context object
+      integer(c_int) function sixel_encode(pixels, width, height, depth, dither, context) & 
+                     bind(c, name="sixel_encode")
+        use iso_c_binding 
+        type(c_ptr), intent(in), value :: pixels
+        integer(c_int), value :: width
+        integer(c_int), value :: height
+        integer(c_int), value :: depth
+        type(c_ptr), intent(in), value :: dither
+        type(c_ptr), intent(in), value :: context
+      end function sixel_encode
+
+  end interface
+   
+
 
 end module m_sixel
