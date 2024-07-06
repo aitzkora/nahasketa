@@ -1,0 +1,10 @@
+from setuptools import Extension, setup
+
+setup(
+    ext_modules=[
+      Extension(
+        name="error",  # as it would be imported
+        sources=["foo/error.py"], # all sources are compiled into a single binary file
+        ),
+      ]
+    )
