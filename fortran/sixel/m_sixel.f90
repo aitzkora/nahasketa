@@ -27,7 +27,15 @@ module m_sixel
       type(c_ptr) ::desc
     end function
 
+     subroutine usleepc(delay) bind(C, name="usleep") 
+       use iso_c_binding
+       integer(c_int) :: delay 
+     end subroutine usleepc
+
   end interface
+
+
+
 
   !> interface to allocators
   interface
@@ -90,7 +98,6 @@ module m_sixel
     end subroutine sixel_allocator_free
 
 
-
   end interface
  
   type, bind(c) :: sixel_output
@@ -140,28 +147,6 @@ module m_sixel
 
     end function sixel_output_new
     
-
-    function sixel_output_create(fn_write, priv) &
-        bind(c,name="sixel_output_create")
-      use iso_c_binding
-      integer(c_int) :: sixel_output_create
-      type(c_ptr), intent(in), value :: fn_write
-      type(c_ptr), intent(in), value :: priv
-
-     end function sixel_output_create
-
-     subroutine sixel_output_destroy(output) &
-        bind(c,name="sixel_output_destroy")
-      use iso_c_binding
-      type(c_ptr), intent(in), value :: output
-     end subroutine sixel_output_destroy
-
-     subroutine sixel_output_ref(output) &
-       bind(c,name="sixel_output_ref")
-      use iso_c_binding
-      type(c_ptr), intent(in), value :: output
-     end subroutine sixel_output_ref
-
      subroutine sixel_output_unref(output) &
        bind(c,name="sixel_output_unref")
       use iso_c_binding
@@ -172,6 +157,12 @@ module m_sixel
   end interface
 
 
+  !> fortran interface to the sixel_dither C struct (only for debug raisons)
+  !> you could convert a c_ptr to fortran ptr using the following code
+  !> type(c_ptr) :: dither_c
+  !> type(sixel_dither) :: dither_f
+  !> call c_f_pointer(dither_c, dither_f)
+  !> now  dither_f % palette points to the dither_c.palette !
 
   type, bind(c) :: sixel_dither 
     integer(c_int) ::  ref               
@@ -206,12 +197,19 @@ module m_sixel
         integer(c_int), value :: dither_mode
       end function sixel_dither_get
 
+      !> set the pixel format 
       subroutine sixel_dither_set_pixelformat(dither, pixel_format) &
                  bind(c, name="sixel_dither_set_pixelformat")
         use iso_c_binding
         type(c_ptr), intent(in), value :: dither
         integer(c_int), intent(in), value :: pixel_format
       end subroutine sixel_dither_set_pixelformat
+
+     subroutine sixel_dither_unref(dither) &
+       bind(c,name="sixel_dither_unref")
+      use iso_c_binding
+      type(c_ptr), intent(in), value :: dither
+     end subroutine sixel_dither_unref
 
 
   end interface
@@ -220,7 +218,7 @@ module m_sixel
 
    interface
 
-      !> returns a built-in dither context object
+      !> encode in sixel format (dither) the buffer char \c pixels in the current terminal
       integer(c_int) function sixel_encode(pixels, width, height, depth, dither, context) & 
                      bind(c, name="sixel_encode")
         use iso_c_binding 
@@ -234,6 +232,5 @@ module m_sixel
 
   end interface
    
-
 
 end module m_sixel
