@@ -5,3 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "compute_sqrt"
 version = "0.01"
+dependencies = [ 
+"requests",
+'importlib-metadata; python_version<"3.10"',
+"numpy"]
+[tool.setuptools.packages.find]
+include = ["callback*"] 
