@@ -1,4 +1,6 @@
-#pragma once
+#ifndef _GRAY_IMAGE_H
+#define _GRAY_IMAGE_H
+
 #include <sixel.h>
 
 typedef struct gray_image_t 
@@ -15,3 +17,4 @@ void gray_image_destroy(gray_image * img);
 
 void render(gray_image * img, char * buff, int m, int n);
 
+#endif
