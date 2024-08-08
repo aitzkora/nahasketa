@@ -22,8 +22,8 @@ void gray_image_destroy(gray_image * img) {
 }
 
 void render(gray_image * img, char * buff, int m, int n) {
- fprintf(stdout,"\0x1BPq\"1;1;%d;%d;", m,n);
+ fprintf(stdout,"\033[1;1H");
  sixel_encode(buff, m, n, 0, img->dither, img->output);
- fprintf(stdout,"\0x1B\0x5C\0x1B%c", '8');
+ fprintf(stdout,"\0x1B\0x5C\0338");
 }
 
