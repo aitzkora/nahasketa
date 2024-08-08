@@ -2,11 +2,13 @@
 #include <math.h> 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <stdio.h>
 
-#define TILE_SIZE 20
-#define N 20
+#define TILE_SIZE 10
+#define N 40
 #define M (TILE_SIZE*N)
-#define NB_REPEATS 200
+#define NB_REPEATS 300000
 
 
 void draw_damier(const char * state, char * buff, int m, int n, int tile_size)
@@ -25,18 +27,53 @@ void draw_damier(const char * state, char * buff, int m, int n, int tile_size)
 }
 
 
+void one_step_life(const char * state1, char * state2, int m, int n) {
+  int i,j;
+  memset(state2, 0, m * n * sizeof(char));
+  for(i = 1; i < (m- 1); i++) {
+    for (j = 1; j <(n-1) ; j++) {
+      char accu = 0;
+      accu += state1[(i-1)*n+(j-1)];
+      accu += state1[(i  )*n+(j-1)];
+      accu += state1[(i+1)*n+(j-1)];
+      accu += state1[(i-1)*n+(j  )];
+      accu += state1[(i+1)*n+(j  )];
+      accu += state1[(i-1)*n+(j+1)];
+      accu += state1[(i  )*n+(j+1)];
+      accu += state1[(i+1)*n+(j+1)];
+      if (accu < 2 ||  accu > 3) 
+        state2[i * n + j ] = 0;
+      else if (accu == 3) 
+        state2[i * n + j ] = 1;
+      else 
+        state2[i * n + j ] = state1[i * n + j];
+    }
+  }
+}
+
+
 int main() {
   int i,j,k,l;
   gray_image * img = gray_image_create();
   char buff[M*M];
-  char state[N*N];
+  char * state1 = malloc(N * N * sizeof(char));
+  char * state2 = malloc(N * N * sizeof(char));
+  char * tmp;
+
+  for(i = 1 ; i < (N-1); ++i) 
+    for(j = 1; j < (N-1); ++j) 
+      state1[i * N + j] = (drand48() < 0.5) ? 1 : 0;
+ 
   for(l = 0; l < NB_REPEATS; l++) {
-      for(i = 0 ; i < N; ++i) 
-        for(j = 0; j < N; ++j) 
-          state[i * N + j] = (drand48() < 0.5) ? 255 : 0;
-      draw_damier(state, buff, N, N, TILE_SIZE);
+      one_step_life(state1, state2, N, N);
+      draw_damier(state2, buff, N, N, TILE_SIZE);
       render(img, buff, N*TILE_SIZE, N*TILE_SIZE);
+      tmp = state1;
+      state1 = state2;
+      state2 = tmp;
   }
+  free(state1);
+  free(state2);
   gray_image_destroy(img);
   return 0;
 }
