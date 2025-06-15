@@ -5,6 +5,8 @@ program skotx_direkt
   include 'scotchf.h'
   integer, parameter :: is = SCOTCH_NUMSIZE
 
+  real(c_double)             :: meshdat(scotch_meshdim)
+  real(c_double)             :: grafdat(scotch_graphdim)
   type(c_ptr) ::              xadj
   type(c_ptr) ::              adjncy
 
@@ -12,14 +14,28 @@ program skotx_direkt
   integer(is), allocatable :: npart(:)
   integer(is) ::              nparts
   integer(is) ::              objval
-  integer(is), allocatable :: edgetab
-  integer(is)              :: edgenbr
+  integer(is)              :: edgenbr = 18
 
   integer(is), parameter ::   baseval      = 1
   integer(is), parameter ::   ne           = 6
   integer(is), parameter ::   nn           = 7
   integer(is) ::              eptr(7)      = [ 0, 3, 6, 9, 12, 15, 18 ]
   integer(is) ::              eind(18)     = [ 0, 1, 2, 0, 1, 5, 1, 5, 4, 1, 4, 6, 1, 6, 3, 1, 3, 2 ]
+  integer(is) ::              ierr
+  integer(is) ::              datatab ! to get back data from graph
+  integer(is) :: grafbaseval 
+  integer(is) :: grafvertnbr 
+  integer(is) :: grafvertidx
+  integer(is) :: grafvendidx 
+  integer(is) :: grafveloidx 
+  integer(is) :: grafvlblidx 
+  integer(is) :: grafedgenbr 
+  integer(is) :: grafedgeidx 
+  integer(is) :: grafedloidx
+ 
+
+
+
 
   type :: mesh_scotch 
      integer(is)              :: velmbas
@@ -39,16 +55,33 @@ program skotx_direkt
   eind (:)     = eind (:)     + baseval
   eptr (:)     = eptr (:)     + baseval
 
-  call metis_to_mesh(mesh, baseval, nn, ne, eptr, eind)
+  call metis_to_mesh(mesh, baseval, nn, ne, eptr, eind, edgenbr)
+
+  call scotchfmeshbuild(meshdat, mesh%velmbas, mesh%vnodbas,               &
+                                 mesh%velmnbr, mesh%vnodnbr,               &
+                                 mesh%verttab, mesh%verttab(baseval+1),    &
+                                 mesh%verttab, mesh%verttab, mesh%verttab, &
+                                 mesh%edgenbr, mesh%edgetab, ierr)
+
+  if (ierr /= 0) stop "could not build mesh"
+
+  call scotchfmeshgraphdual (meshdat, grafdat, 2, ierr)
+
+  if (ierr /= 0 ) stop "could not build the dual graph"
+  call scotchfgraphdata (grafdat, datatab, grafbaseval,                      &
+                         grafvertnbr, grafvertidx, grafvendidx, grafveloidx, &
+                         grafvlblidx, grafedgenbr, grafedgeidx, grafedloidx)
+ 
 
 contains 
 
-   subroutine metis_to_mesh(mesh, baseval, vnodnbr, velmnbr, verttab, edgetab)
+   subroutine metis_to_mesh(mesh, baseval, vnodnbr, velmnbr, verttab, edgetab, edgenb)
      type(mesh_scotch), intent(out) :: mesh
      integer(is), intent(in) :: baseval
      integer(is), intent(in) :: vnodnbr , velmnbr
      integer(is), intent(in) :: verttab(baseval:velmnbr+baseval) ! beware : velmnbr+1
-     integer(is), intent(in) :: edgetab(:)
+     integer(is), intent(in) :: edgetab(baseval:edgenb+baseval)
+     integer(is), intent(in) :: edgenb
 
      integer(is) :: vertnum, degrmax, edgeadj
      integer(is), allocatable :: srcverttax(:), srcedgetax(:), tmp(:)
@@ -60,8 +93,7 @@ contains
 
      edgechk = verttab(velmnbr+baseval)
 #ifndef NDEBUG
-     if ((lbound(edgetab, 1) /= baseval) .or. & 
-         (ubound(edgetab,1) /= (edgechk-1))) then
+     if (edgechk-baseval /= edgenb) then
         stop "bad bounds for edgetab"
      endif
 #endif
@@ -82,7 +114,7 @@ contains
          edgenbr = edgenbr + degrval
          EDGE : do 
            if (edgenum == edgennd) exit
-           ind = velmnbr + eind(edgenum) 
+           ind = velmnbr + edgetab(edgenum) 
            srcverttax(ind) = srcverttax(ind) + 1
            edgenum = edgenum  + 1
          end do EDGE
@@ -134,11 +166,13 @@ contains
      srcverttax(velmnnd+1:velmnnd+1+vnodnbr-2) = tmp(:)
      srcverttax(velmnnd) = verttab(velmnnd)
 
-     mesh%edgetab = srcedgetax
-     mesh%verttab = srcverttax
-     mesh%edgenbr = edgenbr
+     mesh%velmbas = baseval
+     mesh%vnodbas = velmnnd
      mesh%vnodnbr = vnodnbr
      mesh%velmnbr = velmnbr
+     call move_alloc (to=mesh%edgetab , from=srcedgetax)
+     call move_alloc (from=srcverttax, to=mesh%verttab)
+     mesh%edgenbr = edgenbr
    end subroutine metis_to_mesh
 
 
