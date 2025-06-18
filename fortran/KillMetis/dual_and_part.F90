@@ -7,36 +7,39 @@ program skotx_direkt
 
   real(c_double)             :: meshdat(scotch_meshdim)
   real(c_double)             :: grafdat(scotch_graphdim)
-  type(c_ptr) ::              xadj
-  type(c_ptr) ::              adjncy
+  type(c_ptr)                :: xadj
+  type(c_ptr)                :: adjncy
 
-  integer(is), allocatable :: epart(:)
-  integer(is), allocatable :: npart(:)
-  integer(is) ::              nparts
-  integer(is) ::              objval
-  integer(is)              :: edgenbr = 18
-
+  integer(is)            :: edgenbr = 18
   integer(is), parameter ::   baseval      = 1
   integer(is), parameter ::   ne           = 6
   integer(is), parameter ::   nn           = 7
   integer(is) ::              eptr(7)      = [ 0, 3, 6, 9, 12, 15, 18 ]
   integer(is) ::              eind(18)     = [ 0, 1, 2, 0, 1, 5, 1, 5, 4, 1, 4, 6, 1, 6, 3, 1, 3, 2 ]
   integer(is) ::              ierr
-  integer(is) ::              datatab ! to get back data from graph
   integer(is) :: grafbaseval 
   integer(is) :: grafvertnbr 
-  integer(is) :: grafvertidx
-  integer(is) :: grafvendidx 
-  integer(is) :: grafveloidx 
-  integer(is) :: grafvlblidx 
+  type(c_ptr) :: grafverttab
+  type(c_ptr) :: grafvendtab 
   integer(is) :: grafedgenbr 
-  integer(is) :: grafedgeidx 
-  integer(is) :: grafedloidx
- 
+  type(c_ptr) :: grafedgetab
+  type(c_ptr) :: grafedlotab
+  integer(is) :: vertnum, vertindex
 
+  interface
+    function graph_data(grafptr,baseval,vertnbr,verttab,vendtab,velotab,vlbltab,edgenbr,edgetab,endlotab)  &
+      bind(C,name="SCOTCH_graphData")
+      import c_ptr, is, c_double, scotch_graphdim
+      real(c_double) :: grafptr(scotch_graphdim)
+      type(c_ptr) :: verttab, vendtab, velotab, vlbltab
+      type(c_ptr) :: edgetab, endlotab
+      integer(is) :: baseval, vertnbr, edgenbr
+      integer(is) :: graph_data
+    end function graph_data !standard C library qsort
+  end interface
+  
 
-
-
+  ! mesh fortran datatype 
   type :: mesh_scotch 
      integer(is)              :: velmbas
      integer(is)              :: vnodbas
@@ -46,16 +49,15 @@ program skotx_direkt
      integer(is)              :: edgenbr
      integer(is), allocatable :: edgetab(:)
   end type mesh_scotch
-  
+ 
+  integer(is), pointer :: verttab_f(:), edgetab_f(:)
+ 
   type(mesh_scotch) :: mesh
-
-  allocate (epart(ne))
-  allocate (npart(nn))
 
   eind (:)     = eind (:)     + baseval
   eptr (:)     = eptr (:)     + baseval
 
-  call metis_to_mesh(mesh, baseval, nn, ne, eptr, eind, edgenbr)
+  call metis_to_mesh(mesh, baseval, nn, ne, eptr, edgenbr, eind)
 
   call scotchfmeshbuild(meshdat, mesh%velmbas, mesh%vnodbas,               &
                                  mesh%velmnbr, mesh%vnodnbr,               &
@@ -68,20 +70,40 @@ program skotx_direkt
   call scotchfmeshgraphdual (meshdat, grafdat, 2, ierr)
 
   if (ierr /= 0 ) stop "could not build the dual graph"
-  call scotchfgraphdata (grafdat, datatab, grafbaseval,                      &
-                         grafvertnbr, grafvertidx, grafvendidx, grafveloidx, &
-                         grafvlblidx, grafedgenbr, grafedgeidx, grafedloidx)
- 
+  
+  ierr = graph_data (grafdat, grafbaseval, grafvertnbr, grafverttab, grafvendtab, & 
+                     c_null_ptr, c_null_ptr, grafedgenbr, &
+                     grafedgetab, grafedlotab )
+
+   print '(a,i0)', "baseval : ", grafbaseval
+   print '(a,i0)', "vertnbr : ", grafvertnbr
+   print '(a,i0)', "edgenbr : ", grafedgenbr
+
+
+   call c_f_pointer(grafverttab, verttab_f, shape=[grafvertnbr+1])
+   call c_f_pointer(grafedgetab, edgetab_f, shape=[grafedgenbr])
+
+
+  do vertnum=grafbaseval, grafvertnbr+grafbaseval-1
+    block
+       integer :: nb 
+       character(len=25) :: variable_format
+       nb = verttab_f(vertnum+1)-verttab_f(vertnum)
+       write (variable_format, '(a,i0,a)') "(i0,a,",nb, "(i0,1x))"
+       print variable_format, vertnum, " : ", edgetab_f(verttab_f(vertnum):verttab_f(vertnum+1)-1) 
+    end block
+  end do
+
 
 contains 
 
-   subroutine metis_to_mesh(mesh, baseval, vnodnbr, velmnbr, verttab, edgetab, edgenb)
+   subroutine metis_to_mesh(mesh, baseval, vnodnbr, velmnbr, verttab, edgenb, edgetab)
      type(mesh_scotch), intent(out) :: mesh
      integer(is), intent(in) :: baseval
      integer(is), intent(in) :: vnodnbr , velmnbr
      integer(is), intent(in) :: verttab(baseval:velmnbr+baseval) ! beware : velmnbr+1
-     integer(is), intent(in) :: edgetab(baseval:edgenb+baseval)
      integer(is), intent(in) :: edgenb
+     integer(is), intent(in) :: edgetab(baseval:edgenb+baseval)
 
      integer(is) :: vertnum, degrmax, edgeadj
      integer(is), allocatable :: srcverttax(:), srcedgetax(:), tmp(:)
@@ -164,13 +186,15 @@ contains
 
      tmp = srcverttax(velmnnd:velmnnd+vnodnbr-2)
      srcverttax(velmnnd+1:velmnnd+1+vnodnbr-2) = tmp(:)
+     deallocate (tmp)
+
      srcverttax(velmnnd) = verttab(velmnnd)
 
      mesh%velmbas = baseval
      mesh%vnodbas = velmnnd
      mesh%vnodnbr = vnodnbr
      mesh%velmnbr = velmnbr
-     call move_alloc (to=mesh%edgetab , from=srcedgetax)
+     call move_alloc (from=srcedgetax, to=mesh%edgetab)
      call move_alloc (from=srcverttax, to=mesh%verttab)
      mesh%edgenbr = edgenbr
    end subroutine metis_to_mesh

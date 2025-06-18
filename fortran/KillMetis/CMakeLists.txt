@@ -1,9 +1,6 @@
 cmake_minimum_required (VERSION 3.10)
 cmake_policy(SET CMP0074 NEW)
-project(KillMetis)
-enable_language(Fortran)
-
+project(KillMetis LANGUAGES Fortran C)
 find_package(SCOTCH)
-
 add_executable(dual_and_part.x dual_and_part.F90)
 target_link_libraries(dual_and_part.x PRIVATE SCOTCH::scotch SCOTCH::scotcherr)
