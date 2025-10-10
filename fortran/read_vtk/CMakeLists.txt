@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.20)
+project(read_vtu)
+enable_language(Fortran)
+add_library(vtu m_vtu.f90)
+target_sources(vtu PRIVATE sm_vtu_header.f90 m_tools.f90)
+add_executable(read_vtk read_vtu.f90)
+target_link_libraries(read_vtk vtu)
