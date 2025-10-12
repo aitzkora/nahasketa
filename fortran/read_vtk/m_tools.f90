@@ -6,26 +6,29 @@ module m_tools
 
 contains 
 
-  function split(str, separator, kwd_len) result(strings)
-    character(len=*), intent(in) :: str
+  function split(str_in, separator, token_len) result(strings)
+    character(len=*), intent(in) :: str_in
+    character(:), allocatable :: str
     character, intent(in), optional :: separator
-    integer, intent(in), optional :: kwd_len
+    integer, intent(in), optional :: token_len
     character(len=:), allocatable :: strings(:)
     integer, allocatable :: positions(:)
     character  :: sep
-    integer :: kwd, nb_sep, i, curr
+    integer :: token, nb_sep, i, curr
     if (present(separator)) then
       sep = separator 
     else
       sep = ' '
     end if
     if (present(separator)) then 
-      kwd = kwd_len
+      token = token_len
     else
-      kwd = 10
+      token = 32
     end if
+    str = trim(str_in)
+    ! beware of special case of sep = ' '
     nb_sep = count_char(str, sep)
-    allocate(character(len=kwd)::strings(nb_sep+1))
+    allocate(character(len=token)::strings(nb_sep+1))
     allocate(positions(nb_sep+1))
     curr = 0
     positions(1) = 0
