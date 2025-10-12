@@ -15,9 +15,8 @@ contains
     type(vtu_file), intent(inout) :: vtu
     integer, parameter :: HEADER_MAX_LINE_NUMBER = 40
     character(len=256) :: lines(HEADER_MAX_LINE_NUMBER)
-    character(len=32), allocatable :: str_split(:)
-    integer(4) :: file_unit, ios, i, j, header_len
-    integer(4) :: rs1, rs2, re1, re2
+    integer(4) :: file_unit, ios, i, header_len
+    integer(4) :: rin(2), rout(2), rsauv(2)
     integer(4) :: NumberOfPoints, NumberOfCells
    
     ! open file
@@ -41,20 +40,56 @@ contains
     if (index(lines(1), '<?xml version="1.0"?>') /= 1)  then
        stop -1
     end if  
-    re1 = header_len
-    rs1 = 2
+    rin(2) = header_len
+    rin(1) = 2
    
-    call extract_keyword_range(lines, "Piece", rs1, re1, rs2, re2)
-    PIECE : if (re2 /= re1 .and. rs2 /=rs1) then
-      NumberOfCells = get_keyword_int(trim(lines(rs2)), "NumberOfCells")
-      NumberOfPoints = get_keyword_int(trim(lines(rs2)), "NumberOfPoints")
+     
+    PIECE : if (extract_keyword_range(lines, "Piece", rin, rout)) then
+      NumberOfCells = get_keyword_int(trim(lines(rout(1))), "NumberOfCells")
+      NumberOfPoints = get_keyword_int(trim(lines(rout(1))), "NumberOfPoints")
       if (debug) then
-        print * , "number of points ->", NumberOfPoints
-        print * , "number of cells ->", NumberOfCells
+        write(output_unit, '(a,1x,i0)') "number of points : ", NumberOfPoints
+        write(output_unit, '(a,1x,i0)') "number of cells  : ", NumberOfCells
       end if 
       allocate(vtu%points(NumberOfPoints))
       allocate(vtu%connectivity(NumberOfCells))
-      
+      rin = rout
+      if (extract_keyword_range(lines, "Points", rin, rout)) then
+          if (debug) write(output_unit, '(a)') repeat("-",6) // " Points " // repeat("-", 6)
+          rin = rout
+          POINTS_ARRAY: if (extract_keyword_range(lines, "DataArray", rin, rout)) then
+            if (debug) then
+              print *, "number of components : ", get_keyword_int(trim(lines(rout(1))), "NumberOfComponents")
+              print *, "name                 : ", get_keyword_str(trim(lines(rout(1))), "Name")
+              print *, "offset               : ", get_keyword_int(trim(lines(rout(1))), "offset")
+              print *, "type                 : ", get_keyword_str(trim(lines(rout(1))), "type")
+            end if
+          end if  POINTS_ARRAY
+          if (extract_keyword_range(lines, "Cells", [2, header_len], rout)) then
+            if (debug) write(output_unit, '(a)') repeat("-",6) // " Cells " // repeat("-", 6)
+            rsauv = rout
+            rin = rout
+            do 
+              if (extract_keyword_range(lines, "DataArray", rin, rout)) then
+                 if (debug) then
+                  print *, "type   :", get_keyword_str(trim(lines(rout(1))), "type")
+                  print *, "Name   :", get_keyword_str(trim(lines(rout(1))), "Name")
+                  print *, "offset :", get_keyword_int(trim(lines(rout(1))), "offset")
+                end if 
+                  if (rout(2) < rsauv(2)) then 
+                    rin(1) = rout(2)+1
+                    rin(2) = rsauv(2)
+                 end if
+              else
+               exit
+              end if 
+            end do 
+          else
+            stop "Cells not Found"
+          end if
+      else
+        stop "Points not Found"
+      end if 
     else
       stop "Piece not Found"
     end if PIECE
@@ -66,28 +101,29 @@ contains
   !> starting by <keyword> and finishing by </keyword
   !> as a new subrange (rs_out, re_out)
   !> if no keyword is find, the result does not change
-  pure subroutine extract_keyword_range(lines, keyword, rs_in, re_in, rs_out, re_out)
+  function extract_keyword_range(lines, keyword, rin, rout) result(found)
    character(len=*), intent(in) :: lines(:)
    character(len=*), intent(in) :: keyword
-   integer(4), intent(in) :: rs_in, re_in
-   integer(4), intent(out) :: rs_out, re_out
+   integer(4), intent(in) :: rin(2)
+   integer(4), intent(out) :: rout(2)
+   logical :: found
    integer :: i
 
-   rs_out = rs_in
-   re_out = re_in
+   rout = rin
    ! search for range start
-   do i=rs_in, re_in
+   do i=rin(1), rin(2)
      if (index(trim(lines(i)), "<"// keyword ) /= 0) exit
    end do
-   if (i /= re_in) then
-     rs_out = i
+   if (i /= rin(2)) then
+     rout(1) = i
      !> search for range end
-     do i=rs_out, re_in
+     do i=rout(1), rin(2)
        if (index(trim(lines(i)), "</"// keyword//">" ) /= 0) exit
      end do
-     if (i /= re_in) re_out = i
+     if (i /= rin(2)) rout(2) = i
    end if
-  end subroutine extract_keyword_range
+   found = all(rin /= rout)
+  end function extract_keyword_range
 
   !> kwd must be a constant string
   function get_keyword_str(str_in, kwd) result(str_out)
