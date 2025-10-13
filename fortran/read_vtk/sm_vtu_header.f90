@@ -40,10 +40,16 @@ contains
     if (index(lines(1), '<?xml version="1.0"?>') /= 1)  then
        stop -1
     end if  
+    ! FIXME:  must  check that all format are appended
+    do i=2, header_len
+      if(index(trim(lines(i)), "format") /= 0) then
+        if (get_keyword_str(trim(lines(i)), "format") /= "appended") then
+          stop "one format is not 'appended'"
+        end  if
+      end if
+    end do
     rin(2) = header_len
     rin(1) = 2
-   
-     
     PIECE : if (extract_keyword_range(lines, "Piece", rin, rout)) then
       NumberOfCells = get_keyword_int(trim(lines(rout(1))), "NumberOfCells")
       NumberOfPoints = get_keyword_int(trim(lines(rout(1))), "NumberOfPoints")
@@ -51,39 +57,49 @@ contains
         write(output_unit, '(a,1x,i0)') "number of points : ", NumberOfPoints
         write(output_unit, '(a,1x,i0)') "number of cells  : ", NumberOfCells
       end if 
-      allocate(vtu%points(NumberOfPoints))
-      allocate(vtu%connectivity(NumberOfCells))
       rin = rout
       if (extract_keyword_range(lines, "Points", rin, rout)) then
-          if (debug) write(output_unit, '(a)') repeat("-",6) // " Points " // repeat("-", 6)
+          if (debug) write(output_unit, '(a)') repeat("-",7) // " Points " // repeat("-", 7)
           rin = rout
           POINTS_ARRAY: if (extract_keyword_range(lines, "DataArray", rin, rout)) then
+            vtu%points%number_of_components = get_keyword_int(trim(lines(rout(1))), "NumberOfComponents")
+            vtu%points%offset               = get_keyword_int(trim(lines(rout(1))), "offset")
+            vtu%points%type                 = get_keyword_str(trim(lines(rout(1))), "type")
             if (debug) then
-              print *, "number of components : ", get_keyword_int(trim(lines(rout(1))), "NumberOfComponents")
-              print *, "name                 : ", get_keyword_str(trim(lines(rout(1))), "Name")
-              print *, "offset               : ", get_keyword_int(trim(lines(rout(1))), "offset")
-              print *, "type                 : ", get_keyword_str(trim(lines(rout(1))), "type")
+              print *, "components : ", vtu%points%number_of_components
+              print *, "offset     : ", vtu%points%offset
+              print *, "type       : ", vtu%points%type
             end if
           end if  POINTS_ARRAY
           if (extract_keyword_range(lines, "Cells", [2, header_len], rout)) then
-            if (debug) write(output_unit, '(a)') repeat("-",6) // " Cells " // repeat("-", 6)
+            if (debug) write(output_unit, '(a)') repeat("-",7) // " Cells " // repeat("-", 7)
             rsauv = rout
             rin = rout
-            do 
+            CELLS : do i=1, header_len ! borne sup
               if (extract_keyword_range(lines, "DataArray", rin, rout)) then
-                 if (debug) then
-                  print *, "type   :", get_keyword_str(trim(lines(rout(1))), "type")
-                  print *, "Name   :", get_keyword_str(trim(lines(rout(1))), "Name")
-                  print *, "offset :", get_keyword_int(trim(lines(rout(1))), "offset")
-                end if 
-                  if (rout(2) < rsauv(2)) then 
-                    rin(1) = rout(2)+1
-                    rin(2) = rsauv(2)
-                 end if
+                block   
+                  character(:), allocatable :: str_name, str_type
+                  integer(i4) :: offset_int
+                  str_name = get_keyword_str(trim(lines(rout(1))), "Name")
+                  str_type = get_keyword_str(trim(lines(rout(1))), "type")
+                  offset_int = get_keyword_int(trim(lines(rout(1))), "offset")
+                  vtu%cells = [vtu%cells, cell_array(str_type, str_name, offset_int)]
+                  if (debug) then
+                    print *, "type   :", vtu%cells(size(vtu%cells))%type
+                    print *, "Name   :", vtu%cells(size(vtu%cells))%name
+                    print *, "offset :", vtu%cells(size(vtu%cells))%offset 
+                  end if 
+                end block 
+                if (rout(2) < rsauv(2)-1) then 
+                  rin(1) = rout(2)+2
+                  rin(2) = rsauv(2)
+                else
+                  exit
+                end if
               else
                exit
               end if 
-            end do 
+            end do CELLS
           else
             stop "Cells not Found"
           end if
@@ -122,7 +138,7 @@ contains
      end do
      if (i /= rin(2)) rout(2) = i
    end if
-   found = all(rin /= rout)
+   found = (rout(2) /= rin(2))
   end function extract_keyword_range
 
   !> kwd must be a constant string
@@ -131,27 +147,27 @@ contains
     character(len=*), intent(in) :: kwd
     integer(4) :: pos, pose, eqidx
     character(:), allocatable :: str, str_out
+    logical :: found = .false.
     str = trim(str_in)
-    pos = index(str, kwd)
-    if (pos /= 0) then
-      eqidx = pos+len(kwd)
-      if (str(eqidx:eqidx) == '=') then
-        if (str(eqidx+1:eqidx+1) ==  '"') then
-          pose = index(str(eqidx+2:), '"')
-          if (pose /= 0) then
-           str_out = str(eqidx+2:eqidx+pose)
-          else
-            stop 'keyword not finishing by "'
+    do 
+      pos = index(str, kwd)
+      if (pos /= 0) then
+        eqidx = pos+len(kwd)
+        if (str(eqidx:eqidx) == '=') then
+          if (str(eqidx+1:eqidx+1) ==  '"') then
+            pose = index(str(eqidx+2:), '"')
+            if (pose /= 0) then
+             str_out = str(eqidx+2:eqidx+pose)
+             found = .true. 
+             exit
+            end if
           end if
-        else
-           stop 'keyword not beginning by "'
         end if
       else
-        print *,  'before keyword, there is no ='
+        stop "keyword not found"
       end if
-   else
-     stop "keyword not found"
-   end if
+      str = str(2:)
+    end do
  end function get_keyword_str
 
  function get_keyword_int(str_in, kwd) result(val)

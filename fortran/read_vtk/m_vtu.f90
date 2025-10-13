@@ -12,20 +12,31 @@ module m_vtu
   public  :: vtu_load, vtu_file
   
   ! > type for wave field
-  type :: wavefield
-    real(i8), allocatable :: values(:)
-    character(len=MAX_NAMES_LENGTH), allocatable :: name
-  end type wavefield
+  type :: wavefield_header
+    character(len=:), allocatable :: type
+    integer(i4) :: offset
+    character(len=:), allocatable :: name
+  end type wavefield_header
 
-  
+  type :: cell_array
+    character(:), allocatable :: type
+    character(:), allocatable :: name
+    integer(i4) :: offset
+  end type cell_array
+
+  type :: point_header
+    character(:), allocatable :: type
+    integer(i4) :: number_of_components
+    integer(i4) :: offset
+  end type point_header
+
+
   ! file type
   type :: vtu_file
     character(len=:), allocatable :: filename
-    real(r8), allocatable :: points(:)
-    integer(i4), allocatable :: connectivity(:)
-    integer(i1), allocatable :: types(:)
-    integer(i4), allocatable :: offsets(:)
-    type(wavefield), allocatable :: fields(:)
+    type(point_header) :: points
+    type(cell_array), allocatable :: cells(:)
+    type(wavefield_header), allocatable :: point_data(:)
   end type 
 
 
