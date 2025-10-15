@@ -8,17 +8,20 @@ submodule (m_vtu) sm_vtu_header
 contains
 
   module procedure load_paraview_vtu_header
-    call  read_paraview_vtu_header_ascii_part(vtu)
+    integer(i4) :: pos
+    pos = read_paraview_vtu_header(vtu)
+    call read_paraview_vtu_data(vtu, mesh_in, pos)
   end procedure load_paraview_vtu_header
 
-  subroutine read_paraview_vtu_header_ascii_part(vtu)
+  function read_paraview_vtu_header(vtu) result(header_len)
     type(vtu_file), intent(inout) :: vtu
     integer, parameter :: HEADER_MAX_LINE_NUMBER = 40
     character(len=256) :: lines(HEADER_MAX_LINE_NUMBER)
-    integer(4) :: file_unit, ios, i, header_len
-    integer(4) :: rin(2), rout(2), rsauv(2)
-    integer(4) :: NumberOfPoints, NumberOfCells
-   
+    integer(i4) :: file_unit, ios, i, header_len
+    integer(i4) :: rin(2), rout(2), rsauv(2), offset_int
+    integer(i4) ::  nb_components
+    character(:), allocatable :: str_name, str_type
+     
     ! open file
     file_unit = 22
     open(unit=file_unit, file= vtu%filename, iostat=ios)
@@ -29,47 +32,39 @@ contains
     do i=1, HEADER_MAX_LINE_NUMBER
       read(file_unit, '(A)', iostat=ios) lines(i)
       lines(i)=adjustl(lines(i))
-      if ((ios /= 0) .or. (index(trim(lines(i)), "</UnstructuredGrid>") /= 0)) then
-        exit
-      end if
+      if ((ios /= 0) .or. (index(trim(lines(i)), '<AppendedData encoding="raw">') /= 0)) exit
     end do
-    close( file_unit )
-    ! 
+    close(file_unit)
     header_len = i 
     ! check for header
     if (index(lines(1), '<?xml version="1.0"?>') /= 1)  then
        stop -1
     end if  
-    ! FIXME:  must  check that all format are appended
+    ! all format must equal to appended
     do i=2, header_len
       if(index(trim(lines(i)), "format") /= 0) then
         if (get_keyword_str(trim(lines(i)), "format") /= "appended") then
           stop "one format is not 'appended'"
-        end  if
+        end if
       end if
     end do
-    rin(2) = header_len
-    rin(1) = 2
-    PIECE : if (extract_keyword_range(lines, "Piece", rin, rout)) then
-      NumberOfCells = get_keyword_int(trim(lines(rout(1))), "NumberOfCells")
-      NumberOfPoints = get_keyword_int(trim(lines(rout(1))), "NumberOfPoints")
+    PIECE : if (extract_keyword_range(lines, "Piece", [2, header_len], rout)) then
+      vtu%nb_cells  = get_keyword_int(trim(lines(rout(1))), "NumberOfCells")
+      vtu%nb_points = get_keyword_int(trim(lines(rout(1))), "NumberOfPoints")
       if (debug) then
-        write(output_unit, '(a,1x,i0)') "number of points : ", NumberOfPoints
-        write(output_unit, '(a,1x,i0)') "number of cells  : ", NumberOfCells
+        write(output_unit, '(a,1x,i0)') "number of points : ", vtu%nb_points
+        write(output_unit, '(a,1x,i0)') "number of cells  : ", vtu%nb_cells
       end if 
       rin = rout
       if (extract_keyword_range(lines, "Points", rin, rout)) then
           if (debug) write(output_unit, '(a)') repeat("-",7) // " Points " // repeat("-", 7)
           rin = rout
           POINTS_ARRAY: if (extract_keyword_range(lines, "DataArray", rin, rout)) then
-            vtu%points%number_of_components = get_keyword_int(trim(lines(rout(1))), "NumberOfComponents")
-            vtu%points%offset               = get_keyword_int(trim(lines(rout(1))), "offset")
-            vtu%points%type                 = get_keyword_str(trim(lines(rout(1))), "type")
-            if (debug) then
-              print *, "components : ", vtu%points%number_of_components
-              print *, "offset     : ", vtu%points%offset
-              print *, "type       : ", vtu%points%type
-            end if
+            str_type      = get_keyword_str(trim(lines(rout(1))), "type")
+            nb_components = get_keyword_int(trim(lines(rout(1))), "NumberOfComponents")
+            offset_int    = get_keyword_int(trim(lines(rout(1))), "offset")
+            vtu%points = point_header(str_type , nb_components, offset_int)
+            if (debug) print '(a,1x, i0,1x,a,1x,i0)', "Components" , nb_components, str_type, offset_int
           end if  POINTS_ARRAY
           if (extract_keyword_range(lines, "Cells", [2, header_len], rout)) then
             if (debug) write(output_unit, '(a)') repeat("-",7) // " Cells " // repeat("-", 7)
@@ -77,22 +72,13 @@ contains
             rin = rout
             CELLS : do i=1, header_len ! borne sup
               if (extract_keyword_range(lines, "DataArray", rin, rout)) then
-                block   
-                  character(:), allocatable :: str_name, str_type
-                  integer(i4) :: offset_int
-                  str_name = get_keyword_str(trim(lines(rout(1))), "Name")
-                  str_type = get_keyword_str(trim(lines(rout(1))), "type")
-                  offset_int = get_keyword_int(trim(lines(rout(1))), "offset")
-                  vtu%cells = [vtu%cells, cell_array(str_type, str_name, offset_int)]
-                  if (debug) then
-                    print *, "type   :", vtu%cells(size(vtu%cells))%type
-                    print *, "Name   :", vtu%cells(size(vtu%cells))%name
-                    print *, "offset :", vtu%cells(size(vtu%cells))%offset 
-                  end if 
-                end block 
+                str_name = get_keyword_str(trim(lines(rout(1))), "Name")
+                str_type = get_keyword_str(trim(lines(rout(1))), "type")
+                offset_int = get_keyword_int(trim(lines(rout(1))), "offset")
+                vtu%cells = [vtu%cells, data_array(str_type, str_name, offset_int)]
+                if (debug) print '(a,1x,a,1x,i0)', str_name, str_type, offset_int
                 if (rout(2) < rsauv(2)-1) then 
-                  rin(1) = rout(2)+2
-                  rin(2) = rsauv(2)
+                  rin = [rout(2)+1, rsauv(2)]
                 else
                   exit
                 end if
@@ -103,15 +89,80 @@ contains
           else
             stop "Cells not Found"
           end if
+          if (extract_keyword_range(lines, "PointData", [2, header_len], rout)) then
+            if (debug) write(output_unit, '(a)') repeat("-",7) // " PointData " // repeat("-", 7)
+            rsauv = rout
+            rin = rout
+            if (get_keyword_str(trim(lines(rout(1))), "Scalars") == "wavefield") then
+              FIELDS : do i=1, header_len ! coarse bound on field number
+                if (extract_keyword_range(lines, "DataArray", rin, rout)) then
+                  str_name = get_keyword_str(trim(lines(rout(1))), "Name")
+                  str_type = get_keyword_str(trim(lines(rout(1))), "type")
+                  offset_int = get_keyword_int(trim(lines(rout(1))), "offset")
+                  vtu%point_data = [vtu%point_data, data_array(str_type, str_name, offset_int)]
+                  if (debug) print '(a,1x,a,1x,i0)', str_name, str_type, offset_int
+                  if (rout(2) < rsauv(2)-1) then 
+                    rin = [rout(2)+1, rsauv(2)]
+                  else
+                    exit
+                  end if
+                else
+                  exit
+                end if 
+              end do FIELDS
+            else 
+              stop "Scalars not found"
+            end if
+          else
+            stop "PointData not found"
+          end if
       else
         stop "Points not Found"
       end if 
     else
       stop "Piece not Found"
     end if PIECE
-    
-  end subroutine read_paraview_vtu_header_ascii_part
+  end function read_paraview_vtu_header
 
+  subroutine read_paraview_vtu_data(vtu, mesh_out, pos)
+    type(vtu_file), intent(in) :: vtu
+    type(mesh), intent(inout) :: mesh_out
+    integer(i4), intent(in) :: pos
+    integer(i4) :: file_unit, i, ios
+    integer :: mem_points, mem_cells
+    character(len=1) :: c
+    open(unit=file_unit, access='stream', action='read', file=vtu%filename, convert='big_endian')
+    i = 0 
+    ! jump the first pos lines
+    do 
+      read(file_unit) c
+      if (c == new_line(c)) i = i+1
+      if (i == pos) exit
+    end do
+    ! read _ character
+    read(file_unit) c 
+    ! read memory size for points
+    read(file_unit) mem_points
+    if (debug) then
+      if (mem_points /= 3 * vtu%nb_points*RKIND_MESH) stop "mem points error"
+      print '(a,i0)', 'mem points -> ', mem_points
+    end if
+    ! read points
+    allocate(mesh_out%coo(vtu%nb_points,3))
+    associate(coo => mesh_out%coo)
+      read(file_unit) (coo(i,1),coo(i,2),coo(i,3),i=1,vtu%nb_points)
+    end associate
+    ! read connection
+    read(file_unit) mem_cells
+    if (debug) then
+      if (mem_cells /= vtu%nb_points*IKIND_MESH) stop "mem cells error"
+      print '(a,i0)', 'mem points -> ',  mem_cells
+    end if
+    allocate(mesh_out%connection(vtu%nb_points))
+    read(file_unit,iostat=ios) mesh_out%connection
+
+    close(file_unit)
+  end subroutine read_paraview_vtu_data
 
   !> this routine extract from lines(rs_in, re_in) the lines
   !> starting by <keyword> and finishing by </keyword
@@ -179,6 +230,4 @@ contains
     read(str_out, '(i10)') val
  end function get_keyword_int
    
-
-
 end submodule sm_vtu_header
