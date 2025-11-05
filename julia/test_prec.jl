@@ -53,6 +53,14 @@ function plus(x::MyFloat, y:: MyFloat)
     return MyFloat(m_add, x.e, x.s, x.t, x.emin, y.emin)
 end    
 
+function MyFloat(x::Float64, t::Int64 = 3, emin::Int64 = -1, emax::Int64 =3)
+    @assert x >= 0
+    e = Int64(floor(log2(x))) + 1
+    k = Int(floor(abs(x)/exp2(e-t)))
+    m = Bool[digits(k; base=2, pad=t)...]
+    m = m[end:-1:1]
+    MyFloat(m, e, false, t, emin, emax)
+end
 
 function str_to_exp(x::Int64) 
     exps = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"]
@@ -62,7 +70,7 @@ end
 
 function Base.show(io::IO, z::MyFloat) 
   str_2 = "("*reduce(*,map(x->string((x ? 1 : 0)),z.m))*")₂"
-  str_2 *= "× 2"*str_to_exp(z.e-z.t)
+  str_2 *= "×2"*str_to_exp(z.e-z.t)
   print(io, str_2 * " => ", (exp2.([z.t-1:-1:0;])'*z.m)*exp2(z.e-z.t))
 end
 
