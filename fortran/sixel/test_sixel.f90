@@ -1,27 +1,23 @@
 program test_sixel
   use m_gray_image
-  use iso_c_binding
-  use iso_fortran_env
   implicit none
-  integer(c_int) :: status
 
-  integer, parameter :: NB_REPEATS = 2
-  character(c_char), target, allocatable :: buff(:,:)
-  integer(c_int) :: i,j,k, l, m
   type(gray_img) :: img
+  integer, parameter :: NB_REPEATS = 2
+  integer :: i, j, k, l, m, n
   m = 400
-  allocate(buff(m,m))
-  call gray_img_create(img)
+  n = 200
+  call img%init(m,n)
   do l=1, NB_REPEATS
     do k=1,floor(m/sqrt(2.))
-      do i=1, m
-        do j=1, m
-          buff(i,j) = char(min(255, floor(sqrt(1.*(i-m/2)**2+(j-m/2)**2)/k*2)))
+      do j=1, n
+        do i=1, m
+          img%buff(i,j) = char(min(255, floor(sqrt(1.*(i-m/2)**2+(j-n/2)**2)/k*2)))
         end do
       end do
-      status = img%render(buff)
+      call img%render()
+      call usleepf(5000)
     end do 
   end do
-  call gray_img_destroy(img)
 
 end program test_sixel
