@@ -5,22 +5,23 @@ program test_sixel
   implicit none
   integer(c_int) :: status
 
+  integer, parameter :: NB_REPEATS = 2
   character(c_char), target, allocatable :: buff(:,:)
-  integer(c_int) :: i,j,k, m
+  integer(c_int) :: i,j,k, l, m
   type(gray_img) :: img
   m = 400
   allocate(buff(m,m))
-  call gray_img_constructor(img)
-  do
+  call gray_img_create(img)
+  do l=1, NB_REPEATS
     do k=1,floor(m/sqrt(2.))
       do i=1, m
         do j=1, m
-         buff(i,j) = char(min(255, floor(sqrt(1.*(i-m/2)**2+(j-m/2)**2)/k*2)))
-       end do
+          buff(i,j) = char(min(255, floor(sqrt(1.*(i-m/2)**2+(j-m/2)**2)/k*2)))
+        end do
       end do
       status = img%render(buff)
     end do 
   end do
-
+  call gray_img_destroy(img)
 
 end program test_sixel

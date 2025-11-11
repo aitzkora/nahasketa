@@ -10,10 +10,16 @@ module m_sixel
   !> interface to ad-hoc functions
   interface
 
-     !> code in  sixel_write.c
+     !> code in  sixel_funcs.c
+     function get_win_height() bind(c, name="get_win_height")
+        use iso_c_binding
+        integer(c_int) :: get_win_height
+      end function get_win_height
+
+      !> code in  sixel_funcs.c
      function sixel_write(data, selem, desc) bind(c, name="sixel_write")
       use iso_c_binding
-        character(c_char), intent(in) :: data(*)
+        type(c_ptr), intent(in), value :: data
         integer(c_size_t), intent(in), value :: selem
         type(c_ptr) :: desc
         integer(c_int) :: sixel_write
@@ -27,14 +33,14 @@ module m_sixel
       type(c_ptr) ::desc
     end function
 
-     subroutine usleepc(delay) bind(C, name="usleep") 
+     !  OK until highest bit gets set.
+     function fort_sleep (seconds)  bind ( C, name="sleep" )
        use iso_c_binding
-       integer(c_int) :: delay 
-     end subroutine usleepc
+       integer (c_int) :: fort_sleep
+       integer (c_int), intent (in), value :: seconds
+     end function fort_sleep
 
   end interface
-
-
 
 
   !> interface to allocators
@@ -137,7 +143,7 @@ module m_sixel
       interface ! callback 
         integer(c_int) function fn_write(data, selem, desc)  bind(C)
           use iso_c_binding
-          character(c_char), intent(in) :: data(*)
+          type(c_ptr), intent(in), value :: data
           integer(c_size_t), intent(in), value :: selem
           type(c_ptr) :: desc
         end function  fn_write
@@ -157,7 +163,7 @@ module m_sixel
   end interface
 
 
-  !> fortran interface to the sixel_dither C struct (only for debug raisons)
+  !> fortran interface to the sixel_dither C struct (only for debug reasons)
   !> you could convert a c_ptr to fortran ptr using the following code
   !> type(c_ptr) :: dither_c
   !> type(sixel_dither) :: dither_f
@@ -188,7 +194,7 @@ module m_sixel
   !> interfaces to dither functions
   interface
 
-      !> returns a built-in dither context object
+       !> returns a built-in dither context object
        function sixel_dither_get(dither_mode) &
                 bind(c, name="sixel_dither_get")
         use iso_c_binding 

@@ -1,8 +1,14 @@
 module m_gray_image
   use iso_c_binding
   use iso_fortran_env
+#ifdef __intel__
+  use ifposix
+#endif
   use m_sixel
   implicit none
+#ifdef __NVCOMPILER
+    include 'lib3f.h' !> for getfd
+#endif
 
   !===========================================================================
   !>
@@ -18,11 +24,9 @@ module m_gray_image
   contains
     !> draw image into buffer
     procedure, pass(self) :: render 
-    procedure, pass(self) :: gray_img_constructor
     !final :: gray_img_destroy
   end type gray_img
 
-    
 
 contains
   !===========================================================================
@@ -31,21 +35,27 @@ contains
   !>
   !===========================================================================
 
-   subroutine gray_img_constructor(self)
-    class(gray_img), intent(inout) :: self
-    integer(c_int) :: status, fdesc
-#ifdef __intel__
-    call pxffileno(output_unit, fdesc, status)
-#else
+   subroutine gray_img_create(img)
+    type(gray_img), intent(inout) :: img
+    integer(c_int) :: status
+    integer :: fdesc
+#ifdef __GFORTRAN__
     fdesc = fnum(output_unit)
-#endif  
-    status = sixel_output_new(self%output, sixel_write, &
-                              fdopenf(fdesc, "w" // c_null_char))
-    if (status /= 0) stop 'cannot create output'
-    self%dither = sixel_dither_get(SIXEL_BUILTIN_G8)
-    call sixel_dither_set_pixelformat(self%dither, SIXEL_PIXELFORMAT_G8);
+#elif __INTEL_COMPILER
+    integer :: ierr
+    call pxffileno(output_unit, fdesc, ierr)
+    if (ierr /= 0) stop "can not retrieve fdesc"
+#elif __NVCOMPILER
+    fdesc = getfd(output_unit)
+#endif
 
-  end subroutine gray_img_constructor
+    status = sixel_output_new(img%output, sixel_write, &
+                              fdopenf(fdesc, "w" // char(0)))
+    if (status /= 0) stop 'cannot create output'
+    img%dither = sixel_dither_get(SIXEL_BUILTIN_G8)
+    call sixel_dither_set_pixelformat(img%dither, SIXEL_PIXELFORMAT_G8);
+
+  end subroutine gray_img_create
   !===========================================================================
   !>
   !! \brief draw the bitmap grayscale image stored in the buffer \c buff
@@ -57,15 +67,18 @@ contains
     class(gray_img) :: self
     integer(c_int) :: status
     character(c_char), target, contiguous :: buff(:, :)
-    character(32)  :: fmt_size
-    integer(c_int) :: m,n
+    character(32)  :: fmt_size, clr_str
+    integer(c_int) :: m, n, win_height, secs
     m = size(buff, 1)
     n = size(buff, 2)
-    write (fmt_size, "(a,i0,a,i0,a)") 'Pq"1;1;',m, ';', n, ';' 
-    write (output_unit, "(a)", advance='no') achar(27) // fmt_size
+    !!write (fmt_size, "(a,i0,a,i0,a)") 'Pq"1;1;',m, ';', n, ';' 
+    !!write (fmt_size, "(a,i0,a,i0,a)") '[1;1;H' 
+    win_height = get_win_height() 
+    write (clr_str, '(i0)') win_height
+    !write (output_unit, "(a)", advance='no') achar(27) // "[1;1;H"
+    write (output_unit, "(a)", advance='no') achar(27) // '7'
     status = sixel_encode(c_loc(buff), m, n, 0, self%dither, self%output)
-    write (output_unit, "(a)", advance='no') achar(27) // '\' ! FIXME : document that
-    write (output_unit, "(a)", advance='no') achar(27) // '8' 
+    write (output_unit, "(a)", advance='no')  achar(27) // '8' 
     flush (output_unit)
   end function render
  
@@ -75,7 +88,7 @@ contains
   !===========================================================================
   
   subroutine gray_img_destroy(img) 
-    type(gray_img) :: img
+    class(gray_img) :: img
     call sixel_dither_unref(img%dither)
     call sixel_output_unref(img%output)
   end subroutine gray_img_destroy
