@@ -16,7 +16,7 @@ struct MyFloat{T, EMIN, EMAX}
 end
 
 """
-add two Bool vector with carry
+add two SVector{T,Bool} with carry
 """
 function add_mantissa(x::SVector{T,Bool}, y::SVector{T,Bool}) where {T}
     z = fill(false, T)
@@ -29,13 +29,28 @@ function add_mantissa(x::SVector{T,Bool}, y::SVector{T,Bool}) where {T}
           z[i] = tmp
       end
     end
-    tmp = x[1] + y[1]
+    tmp = x[1] + y[1] + z[1]
     if (tmp>= 2)
-        @error "overflow"
+        throw(OverflowError("mantissa is to small"))
     else
         z[1] = tmp
     end
     return SVector{T, Bool}(z)
+end
+
+## test mantissa functions
+using Test 
+
+@testset "add mantissa" begin
+
+ s1 = SVector{3, Bool}(0, 1, 0)
+ s2 = SVector{3, Bool}(1, 0, 1)
+ s3 = SVector{3, Bool}(1, 1, 1)
+
+ @test add_mantissa(s1, s2) == s3
+
+ @test_throws OverflowError add_mantissa(s1, s3)
+
 end
 
 using LinearAlgebra
@@ -44,8 +59,12 @@ function eoshift(x::SVector{T,Bool}, shf::Int64 = 0) where T
   if (shf >= 0)
       return vcat(SVector{T-shf,Bool}(x[shf+1:end]), SVector{shf, Bool}(zeros(shf)))
   else
-      return vcat(SVector{-shf, Bool}(zeros(-shf)), SVector{T+shf, Bool}(x[1:end+shf]))
+      throw(DomainError("shf must be positive"))
   end
+end
+
+function Base.:<<(x::SVector{T,Bool}, shf::Int64 = 0) where T
+  return eoshift(x, shf)
 end
 
 function plus(x::MyFloat{T,EMIN, EMAX}, y:: MyFloat{T,EMIN, EMAX}) where {T, EMIN, EMAX}
@@ -58,8 +77,7 @@ function plus(x::MyFloat{T,EMIN, EMAX}, y:: MyFloat{T,EMIN, EMAX}) where {T, EMI
     if (shf > T + 2)
         return MyFloat{T, EMIN, EMAX}(x.m, expo, x.s) 
     end
-    m_y_shf = eoshift(y.m, x.e-y.e)
-    m_add = add_mantissa( x.m, m_y_shf)
+    m_add = add_mantissa( x.m, y.m << shf)
     return MyFloat{T, EMIN, EMAX}(m_add, expo, x.s)
 end    
 
