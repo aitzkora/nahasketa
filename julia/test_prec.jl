@@ -25,6 +25,21 @@ function MyFloat{T, EMIN, EMAX}(m::Vector{Bool}, e::Int64, s::Bool) where {T, EM
     return MyFloat{T, EMIN, EMAX}(SVector{T,Bool}(m...), e, s)
 end
 
+function str2bool(hoho::String)
+  map(x->Dict(['0', '1'] .=> [false, true])[x],collect(hoho))
+end
+
+"""
+constructor from string
+"""
+function MyFloat{T, EMIN, EMAX}(s::String, e::Int64, sgn::Bool) where {T, EMIN, EMAX}
+  @assert length(s) == T
+  @assert all((x -> x in ['0','1']).(collect(s)))
+  MyFloat{T, EMIN, EMAX}(SVector{T,Bool}(str2bool(s)), e, sgn)
+end
+
+
+
 function emin(::Type{<:MyFloat{T, EMIN,  EMAX}}) where {T, EMIN, EMAX}
    return EMIN
 end
