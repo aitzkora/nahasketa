@@ -1,0 +1,2 @@
+#!/bin/bash
+gfortran -I/home/fux/configs/scotch7.12.0/include/ -g -o test_scotchElem.x test_scotchElem.f90 -L/home/fux/configs/scotch7.12.0/lib -lscotch -lscotcherrexit

@@ -1,0 +1,22 @@
+define pcsr
+   set $i = 0
+   while $i < $arg2
+     set $j = $arg0[$i] 
+     call (void) printf("%d → [ ", $i)
+     while $j < $arg0[$i+1]
+       call (void) printf("%d ", $arg1[$j])
+       set $j = $j + 1
+     end
+     call (void) printf("]\n")
+     set $i = $i + 1
+   end
+end
+
+file test_scotchElem.x
+b 69
+run
+s
+pcsr verttab edgetab 6
+u 461
+set $mesh=((Mesh*)meshptr)
+pcsr $mesh->verttax $mesh->edgetax 13
