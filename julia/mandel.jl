@@ -1,6 +1,6 @@
 mutable struct Mandel
   const WIN_DIM::Int64
-  const MAX_ITERATIONS::Int64
+  const MAX_ITERATIONS::UInt32
   leftX::Float32
   rightX::Float32
   topY::Float32
@@ -13,7 +13,7 @@ mutable struct Mandel
           rightX,
           bottomY,
           topY,
-          (rightX - leftX) / WIN_DIM
+          (rightX - leftX) / WIN_DIM,
           (topY - bottomY) / WIN_DIM)
 end
 
@@ -31,45 +31,46 @@ function zoom(m::Mandel, ZOOM_SPEED)
 end
 
 
-function it2color(iter) 
-  r = Uint32(0)
-  g = Uint32(0)
-  b = Uint32(0)
-  if (iter < 63) 
+function it2col(iter::UInt32) 
+  r = UInt32(0)
+  g = UInt32(0)
+  b = UInt32(0)
+  if (iter < 0x00003F) 
     r = iter * 2
-  else if (iter < 127)
-    r = (((iter - 64) * 128) / 126) + 128
-  else if (iter < 256)
-    r = (((iter - 128) * 62) / 127) + 193
-  else if (iter < 512) 
-    r = 255
-    g = (((iter - 256) * 62) / 255) + 1
-  else if (iter <= 1024) 
-    r = 255
-    g = (((iter - 512) * 63) / 511) + 64
-  else if (iter <= 2048) 
-    r = 255
-    g = (((iter - 1024) * 63) / 1023) + 128 
+  elseif (iter < 0x00007F)
+    r = (((iter - 0x000040) * 0x00050) ÷ 0x00007E) + 0x000080
+  elseif (iter < 0x000100)
+    r = (((iter - 0x000080) * 0x0003E) ÷ 0x00007F) + 0x0000C1
+  elseif (iter < 0x000200) 
+    r = 0x0000FF
+    g = (((iter - 0x000100) * 0x0003E) ÷ 0x0000FF) + 0x000001
+  elseif (iter <= 0x000400) 
+    r = 0x0000FF
+    g = (((iter - 0x000200) * 0x0003F) ÷ 0x0001FF) + 0x000040
+  elseif (iter <=  0x000800) 
+    r = 0x0000FF
+    g = (((iter - 0x000400) * 0x0003F) ÷ 0x0003FF) + 0x000080 
   else 
-    r = 255
-    g = (((iter - 2048) * 63) / 2047) + 192
+    r = 0x0000FF
+    g = (((iter -  0x000800) * 0x0003F) ÷  0x0007FF) +  0x0000C0
   end  
-  return r << 24 | g << 16 | b << 8| 255
+  return r << 0x000018| g << 0x000010 | b << 0x000008| 0x0000FF
 end
 
-function compute_buff(mandel, X::Array{Int8,2})
-  for i=1:mandel.winDim
-    for j=1:mandel.winDim
-      c = Complex(leftX + m.xStep *j, topY - yStep * i)
+function compute_buff(m::Mandel, X::Array{UInt32,2})
+  for i=1:m.WIN_DIM
+    for j=1:m.WIN_DIM
+      c = Complex(m.leftX + m.xStep *j, m.topY - m.yStep * i)
       z = 0*1im
-      for iter = 0, MAX_ITERATIONS
+      flag = false
+      iter = 0
+      while !flag
         zp = z^2 + c
-        if (abs2(z) > 4) 
-          break
-        end
+        flag = (abs2(z) > 4) || (iter >= m.MAX_ITERATIONS)
         z = zp
+        iter += 1
       end
-      X[i,j] = (iter == MAX_ITERATIONS ? 255 : it2col(iter))
+      X[i,j] = (iter >= m.MAX_ITERATIONS ? 0x0000FF : it2col(UInt32(iter)))
     end 
   end
 end
@@ -84,11 +85,12 @@ function program()
  WIN_DIM = 200
  OUTER_ITERATIONS = 100
  ZOOM_SPEED = -0.01
- m  =  Mandel(WIN_DIM, MAX_ITERATIONS, leftX, rightX, topY, bottomY)
- X = zeros(UInt8, WIN_DIM, WIN_DIM)
+ m = Mandel(WIN_DIM, MAX_ITERATIONS, leftX, rightX, topY, bottomY)
+ X = zeros(UInt32, WIN_DIM, WIN_DIM)
  for i=1:OUTER_ITERATIONS
-   compute_bufft(mandel, X)
-   zoom(mandel, ZOOM_SPEED);
+   compute_buff(m, X)
+   zoom(m, ZOOM_SPEED)
  end
 end
 
+program()
