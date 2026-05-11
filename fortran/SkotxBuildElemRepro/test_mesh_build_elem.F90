@@ -7,7 +7,8 @@ program test_build
   integer :: ierr
   integer(SCOTCH_NUMSIZE), allocatable :: connectivity(:), & 
                                           cell_node_counter(:), &
-                                          metis_corres(:)
+                                          metis_corres(:), &
+                                          ndofs(:)
 
   real(c_double)       :: meshdat(SCOTCH_MESHDIM)
   real(c_double)       :: grafdat(SCOTCH_GRAPHDIM)
@@ -18,16 +19,10 @@ program test_build
   nnode = 4282
   ncommon = 2
   nproc = 4
-  allocate(cell_node_counter(ncell+1))
-  open(unit=22, file="verttab.bin", action="read", form ='unformatted', access='stream')
-  read (22) cell_node_counter
-  close(22)
 
-   
-  allocate(connectivity(cell_node_counter(ncell+1)))
-  open(unit=22, file="edgetab.bin", action="read", form ='unformatted', access='stream')
-  read (22) connectivity
-  close(22)
+  call read_vec("verttab.bin", cell_node_counter, ncell + 1)
+  call read_vec("edgetab.bin", connectivity, cell_node_counter(ncell+1))
+  call read_vec("edlotab.bin", ndofs, ncell)
 
   allocate(metis_corres(ncell))
   
@@ -67,4 +62,24 @@ program test_build
 
   deallocate(connectivity)
   deallocate(cell_node_counter)
+  deallocate(metis_corres)
+
+contains
+
+  subroutine read_vec(filename, vec, length)
+     character(len=*), intent(in) :: filename
+     integer(SCOTCH_NUMSIZE), allocatable, intent(inout) :: vec(:)
+     integer, intent(in) :: length
+     allocate(vec(length))
+     open(unit=22, file=filename, action="read", form ='unformatted', access='stream', err=10)
+     read (22, err=11) vec 
+     close(22)
+     return
+  10 print *, "file " // trim(filename) // " not found! "
+     stop -1
+  11 print *, "could not read the vec!"
+     stop -1
+  end subroutine read_vec
+
+
 end program test_build
