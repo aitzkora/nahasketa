@@ -34,10 +34,10 @@ program test_build
                             ncell, &
                             nnode, &
                             cell_node_counter(1), & ! verttab
-                            cell_node_counter(2), & !compact storage
-                            cell_node_counter(1), & !NULL
-                            cell_node_counter(1), & !NULL
-                            cell_node_counter(1), & !NULL
+                            cell_node_counter(2), & ! vendtab => compact storage
+                            ndofs(1), & ! velotab 
+                            cell_node_counter(1), & ! vnlotab => NULL
+                            cell_node_counter(1), & ! vlbltab => NULL
                             edgenbr, &
                             connectivity(1), &
                             ierr) ! edgetab
@@ -80,6 +80,5 @@ contains
   11 print *, "could not read the vec!"
      stop -1
   end subroutine read_vec
-
 
 end program test_build
