@@ -1,0 +1,5 @@
+set(args "haha" "huhu" "hoho")
+message(STATUS ${args})
+#list(POP_FRONT args)
+list(REMOVE_AT args 0)
+message(STATUS ${args})

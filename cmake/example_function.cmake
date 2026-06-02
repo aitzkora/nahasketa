@@ -1,0 +1,11 @@
+function(haha)
+    if(ARGC GREATER_EQUAL 1)
+        set(src "default.c" ${ARGV0})
+    else()
+    set(src "default.c")
+    endif()
+    message(status "src = ${src}")
+endfunction()
+
+haha("cono.c")
+haha()
