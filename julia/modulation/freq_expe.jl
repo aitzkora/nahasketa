@@ -20,6 +20,3 @@ lines!(ax1, f, S_mag)
 g2 = fig[2,1] = GridLayout()
 ax2 = Axis(fig[2,1], title="S_phase")
 lines!(ax2, f, S_phase)
-
-
-

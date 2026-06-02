@@ -5,9 +5,9 @@ tags
 *aux
 *log
 .ipynb_checkpoints
-build
+/build
 *slides.html
 *.so
 *.x
 *.mod
-*.[0-9]*
+*.[0-9]+

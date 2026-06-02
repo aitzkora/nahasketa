@@ -20,21 +20,24 @@ end
 height_size = 200
 win_size = 256
 fig = Figure(backgroundcolor = RGBf(([238, 130, 255] /255)...), size = (height_size, win_size))
-
 nb_win = size(x,1) ÷ win_size
-
 z=zeros(nb_win, win_size)
-
 for i=1:nb_win
   z[i,:] = fft_window(x, i; width=win_size)
 end  
-
 nb_trames = nb_win ÷ height_size
 GLMakie.heatmap(fig[1,1], z[1:height_size,:]' , axis=(title="Waterfall", ))
 
-for tr=2:nb_trames-1
-  GLMakie.heatmap!(fig[1,1], z[1+tr*height_size:(tr+1)*height_size,:]')
-  sleep(0.001) 
+framerate=30
+timestamps = range(2, nb_trames-1)
+
+for frame=timestamps
+  GLMakie.heatmap!(fig[1,1], z[1+frame*height_size:(frame+1)*height_size,:]')
+  sleep(0.1)
 end
+
+#record(fig,"waterfall.mp4", timestamps; framerate = framerate) do frame
+#  GLMakie.heatmap!(fig[1,1], z[1+frame*height_size:(frame+1)*height_size,:]')
+#end
 
 

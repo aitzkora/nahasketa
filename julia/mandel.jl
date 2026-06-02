@@ -57,7 +57,14 @@ function it2col(iter::UInt32)
   return r << 0x000018| g << 0x000010 | b << 0x000008| 0x0000FF
 end
 
-function compute_buff(m::Mandel, X::Array{UInt32,2})
+function uint32toRGB(x)
+  r = (x & 0xFF0000) >> 16
+  g = (x & 0x00FF00) >> 8
+  b = (x & 0x0000FF)
+  RGBf(r / 255, g / 255, b / 255)
+end
+
+function compute_buff(m::Mandel, X)
   for i=1:m.WIN_DIM
     for j=1:m.WIN_DIM
       c = Complex(m.leftX + m.xStep *j, m.topY - m.yStep * i)
@@ -70,13 +77,15 @@ function compute_buff(m::Mandel, X::Array{UInt32,2})
         z = zp
         iter += 1
       end
-      X[i,j] = (iter >= m.MAX_ITERATIONS ? 0x0000FF : it2col(UInt32(iter)))
+      X[i,j] = (iter >= m.MAX_ITERATIONS ? 0x0000FF : uint32toRGB(it2col(UInt32(iter))))
     end 
   end
 end
 
+
+using GLMakie
+
  
-function program()
  leftX     = -0.2395f0
  rightX    = -0.2275f0
  topY      =  0.660f0
@@ -86,11 +95,14 @@ function program()
  OUTER_ITERATIONS = 100
  ZOOM_SPEED = -0.01
  m = Mandel(WIN_DIM, MAX_ITERATIONS, leftX, rightX, topY, bottomY)
- X = zeros(UInt32, WIN_DIM, WIN_DIM)
+
+ X = fill(RGBf(zeros(3)...), WIN_DIM, WIN_DIM)
+ image(X)
+
  for i=1:OUTER_ITERATIONS
    compute_buff(m, X)
+   image!(X)
    zoom(m, ZOOM_SPEED)
+   println("iteration $i")
  end
-end
 
-program()
