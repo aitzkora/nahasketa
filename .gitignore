@@ -7,7 +7,9 @@ tags
 .ipynb_checkpoints
 /build
 *slides.html
+*.o
 *.so
 *.x
 *.mod
+*.smod
 *.[0-9]+
