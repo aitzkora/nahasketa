@@ -1,0 +1,15 @@
+name = "Ellipsoide"
+uuid = "ceb05bba-edf7-4db2-b117-de017b6e5c91"
+authors = ["aitzkora <marc.fuentes@inria.fr>"]
+version = "0.1.0"
+
+[deps]
+IntervalArithmetic = "d1acc4aa-44c8-5952-acd4-ba5d80a2a253"
+IntervalRootFinding = "d2bf35a9-74e0-55ec-b149-d360ff49b807"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+IntervalArithmetic = "0.22.23"
