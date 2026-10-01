@@ -2,7 +2,7 @@
 
 julia_version = "1.11.9"
 manifest_format = "2.0"
-project_hash = "639b9fdb7d75affe55d8e12c23f4e61ecc8918fe"
+project_hash = "28aa55544f0e80f7dbf80b407ad7ef57a78ccf6c"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -285,6 +285,12 @@ weakdeps = ["StaticArrays"]
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 version = "1.11.0"
+
+[[deps.Infiltrator]]
+deps = ["InteractiveUtils", "Markdown", "REPL", "UUIDs"]
+git-tree-sha1 = "0330ef9ac27dc069bf97fa5ab1a4391be4fcc4f6"
+uuid = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
+version = "1.9.11"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
