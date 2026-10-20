@@ -1,0 +1,10 @@
+name = "ToyFloats"
+uuid = "25a3ad51-834c-4757-953f-9a9c62531dbc"
+version = "0.1.0"
+authors = ["Marc fuentes <marc.fuentes@inria.fr>"]
+
+[deps]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+Test = "1.11.0"
