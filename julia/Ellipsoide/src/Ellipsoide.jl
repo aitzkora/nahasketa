@@ -5,19 +5,22 @@ using Optim
 using Infiltrator
 using Revise
 export newton1D, proj_ellipsoide_diag, proj_ellipsoide_root, lin_han_gen,
-       ADMM, getProblem
+       ADMM, getProblem, getFuns, expe
 
 include("misc.jl")
 
+function getFuns(a::Vector{T}, x::Vector{T}) where {T}
+  f = μ -> sum(a.^2 .* x.^2 ./ (a.^2 .+ μ).^2) - 1.
+  df = μ -> -2. * sum(a.^2 .* x.^2 ./(a.^2 .+μ).^3)
+  return f, df
+end
 
 function proj_ellipsoide_diag(a::Vector{T}, x::Vector{T}) where {T}
-  f = μ-> sum(a.^2 .* x.^2 ./ (a.^2 .+ μ).^2) - 1.
-  df = μ -> -2. * sum(a.^2 .* x.^2 .* (a.^2 .+ μ) ./(a.^2 .+μ).^4)
+  f, df = getFuns(a, x)
   μ₀, it = newton1D(f,df, 0.)
   x₀ = a.^2 .* x ./ (a.^2 .+ μ₀)
   return x₀, μ₀, it
 end
-
 
 using IntervalRootFinding
 using IntervalArithmetic.Symbols 
@@ -58,7 +61,6 @@ function lin_han_gen(A::Matrix{Float64}, α::Float64, a::Vector{Float64}, x₀::
 end 
 
 
-
 function ADMM(A::Matrix{T}, b::Vector{T}, α::T, a::Vector{T}, y₀::Vector{T}, λ₀::Vector{T}, θ::T; tol::T=T(1e-6), ITER_MAX::Int64=1000) where {T}
    y = y₀
    λ = λ₀
@@ -97,15 +99,36 @@ function ADMM(A::Matrix{T}, b::Vector{T}, α::T, a::Vector{T}, y₀::Vector{T}, 
    return y, k
  end
 
-function getProblem(N, ncond, 𝓋 , ω)
-  d = exp10.(collect(0:N-1) .* ncond / (N-1))
-  A = diagm(d)
-  at = d .^ (-ω)
-  xs = at / sqrt(at'*diagm(d)*at)
-  a = xs + (𝓋^2 - dot(xs,xs))/ (1+√(1+dot(A*xs, A*xs)*(𝓋^2 - dot(xs,xs)))) * A*xs
-  return A, a, xs
+function getProblem(N, ncond, ω, v)
+  b = exp10.(collect(0:N-1) .* ncond / (N-1))
+  at = b .^ (-ω)
+  xs = at ./ √dot(b .* at, at)
+  u = xs + (v.^2 - dot(xs,xs))/ (1+√(1+dot(b.*xs, b.*xs)*(v.^2 - dot(xs,xs)))) * (b.*xs)
+  a = 1. ./ sqrt.(b)
+  return b, u, xs, a
 end
 
 
+function expe()
+  N = 10
+  ncond = [3, 4, 5]
+  omega = [1/8., 1/4., 1/2.]
+  𝒱 = [2, 5, 10, 50] 
+  its = zeros(Int32, length(ncond), length(omega), length(𝒱))
+  tps = zeros(Float32, length(ncond), length(omega), length(𝒱))
+  for (i, nc) ∈ enumerate(ncond)
+    for (j, ω) ∈ enumerate(omega)
+      for (k,v) ∈ enumerate(𝒱)
+        println("nc = $nc, ω = $ω , v=$v")
+        b, u, xs, a = getProblem(N, nc, ω, v)
+        xo, μo, it = proj_ellipsoide_diag(a, u)
+        @assert xo ≈ xs
+        its[i,j,k] = it
+        tps[i,j,k] = @elapsed proj_ellipsoide_diag(a, u)
+      end
+    end
+  end
+  return its, tps
+end
 
 end # module Ellipsoide
