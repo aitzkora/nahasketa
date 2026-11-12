@@ -4,10 +4,15 @@ using LinearAlgebra
 using Optim
 using Infiltrator
 using Revise
-export newton1D, proj_ellipsoide_diag, proj_ellipsoide_root, lin_han_gen, ADMM, getProblem, getFuns, expe, ADMM_diag
+export newton1D, proj_ellipsoide_diag, proj_ellipsoide_root, 
+       lin_han, ADMM, getProblem, getFuns, expe, ADMM_diag,
+       ADMM_S_diag
 
 include("misc.jl")
 
+"""
+returns the objective and its derivative
+"""
 function getFuns(a::Vector{T}, x::Vector{T}) where {T}
   f = μ -> sum(a.^2 .* x.^2 ./ (a.^2 .+ μ).^2) - 1.
   df = μ -> -2. * sum(a.^2 .* x.^2 ./(a.^2 .+μ).^3)
@@ -32,7 +37,13 @@ function proj_ellipsoide_root(a::Vector{Float64}, x::Vector{Float64})
 end
 
 
-function lin_han_gen(A::Matrix{Float64}, α::Float64, a::Vector{Float64}, x₀::Vector{Float64}; tol::Float64 = 1e-6, ITER_MAX::Int32=Int32(2000), ζ::Float64 = 0.01)
+"""
+Lin-Han algorithm :
+slow (linear) algorithm to project `a` on 𝓔 = { x ∈ ℝⁿ | <Ax,x> ⩽ α } 
+function lin_han(A, α, a, x₀, ζ; tol, ITER_MAX, verbose) 
+"""
+function lin_han(A::AbstractMatrix{T}, α::T, a::Vector{T}, x₀::Vector{T}, ζ::T = T(0.01); 
+                tol::T = T(1e-6), ITER_MAX::Int64=2000,  verbose::Bool=false) where {T}
  xₖ = x₀
  gₐ = A * a 
  q_a_α  = a' * gₐ - α
@@ -47,15 +58,17 @@ function lin_han_gen(A::Matrix{Float64}, α::Float64, a::Vector{Float64}, x₀::
    cₖ = xₖ - γₖ * uₖ
    wₖ = a - cₖ
    num = gₐ' * wₖ
-   denom = wₖ' * A * wₖ
+   denom = dot(wₖ, A, wₖ)
    tmp = num / denom
    ηₖ = -tmp - √(tmp*tmp-q_a_α / denom)
    xₖ = a .+ ηₖ .* wₖ
    i += 1
-   print("$i ->  $(norm(vₖ)) \n")
+   if (verbose)
+     println("$i ->  $(norm(vₖ))")
+   end
  end   
  if (i == ITER_MAX) 
-     print("WARNING : algorithms does not converge!")
+     println("WARNING : Lin-Han algorithm does not converge!")
  end 
 end 
 
@@ -92,7 +105,6 @@ function ADMM(A::AbstractMatrix{T}, b::Vector{T}, α::T, a::Vector{T}, y₀::Vec
      Rλ = B*x-y-bm
      residu = Rx'*Rx + Ry'*Ry + Rλ'*Rλ 
      flag = residu > tol*tol
-     #println("$k -> $residu")
      k += 1
      res = x
    end
@@ -134,7 +146,58 @@ function ADMM_diag(d::Vector{T}, b::Vector{T}, α::T, a::Vector{T}, y₀::Vector
     Rλ = bd.*x-y-bm
     residu = Rx'*Rx + Ry'*Ry + Rλ'*Rλ 
     flag = residu > tol*tol
-    #println("$k -> $residu")
+    k += 1
+    println("$k -> $residu")
+    res = x
+  end
+  if (k> ITER_MAX)
+    println("nb max d'iter atteint -> pas de conv")
+  end 
+  return res, k
+end
+"""
+ADMM_S_diag(d, b, α, a, y₀, λ₀, θ₀, ν, μ; tol, ITER_MAX) 
+"""
+function ADMM_S_diag(d::Vector{T}, b::Vector{T}, α::T, a::Vector{T}, y₀::Vector{T}, λ₀::Vector{T}, θ₀::T, μ::T = T(10.), τ::T=T(2.) ; tol::T=T(1e-6), ITER_MAX::Int64=2000) where {T}
+  θ = θ₀
+  y = y₀
+  λ = λ₀
+  bd = sqrt.(d)
+  bm = -b ./ bd
+  r = √(α+dot(bm,bm))
+  am = 1 ./ (1 .+ θ * bd.^2)
+  k = 0
+  flag = true
+  res = copy(y)
+  while k < ITER_MAX && flag
+    u = a + bd .* λ + θ * bd .* (y+bm)
+    x = am .* u
+    w = bd .* x - λ./θ - bm
+    nr = norm(w)
+    if nr ≤ r 
+      y = w
+    else
+      y = r/nr .* w 
+    end
+    λ -= θ*(bd.*x-y-bm)
+    Rx = x - a - bd.*λ
+    # compute Py[y-λ] 
+    if dot(y-λ,y-λ) ≤ r*r
+      Py = y-λ
+    else
+      Py = (y-λ)/norm(y-λ) * r
+    end
+    Ry =  y - Py
+    Rλ = bd.*x-y-bm
+    residu = Rx'*Rx + Ry'*Ry + Rλ'*Rλ 
+    # adapt θ
+    if dot(Rx, Rx) > μ * dot(Rλ, Rλ)
+      θ *= (1. + τ)
+    elseif dot(Rλ, Rλ) > μ * dot(Rx, Rx)
+      θ /= (1. + τ)
+    end
+    flag = residu > tol*tol
+    println("$k -> $residu")
     k += 1
     res = x
   end
@@ -157,7 +220,7 @@ end
 function expe()
   N = 10
   ncond = [3, 4, 5]
-  omega = [1/8., 1/4., 1/2.]
+  omega = [0., 1/8., 1/4., 1/2.]
   𝒱 = [2, 5, 10, 50] 
   its = zeros(Int32, length(ncond), length(omega), length(𝒱))
   tps = zeros(Float32, length(ncond), length(omega), length(𝒱))
